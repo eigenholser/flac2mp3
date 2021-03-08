@@ -19,5 +19,9 @@ fun main(args: Array<String>) {
     println(coverResolution)
     val thumbnailResolution = config.extract<Int>("album_art.resolution.thumb")
     println(thumbnailResolution)
+
+    File(mp3Root).walk().filter{
+        it.extension == "mp3"
+    }.forEach { println(it.name) }
 }
 
