@@ -92,6 +92,12 @@
             <artifactId>kotlin-stdlib-jdk8</artifactId>
             <version>1.4.30</version>
         </dependency>
+
+        <dependency>
+            <groupId>io.github.config4k</groupId>
+            <artifactId>config4k</artifactId>
+            <version>0.4.2</version>
+        </dependency>
     </dependencies>
 
 </project>
