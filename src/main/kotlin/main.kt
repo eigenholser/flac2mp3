@@ -48,7 +48,7 @@ fun main(args: Array<String>) {
 
         //SchemaUtils.create(Flac)
 
-        File(mp3Root).walk().filter {
+        File(flacRoot).walk().filter {
             it.extension == "flac"
         }.forEach { file ->
             println("flacfile: $file")
