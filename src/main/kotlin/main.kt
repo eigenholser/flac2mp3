@@ -20,8 +20,8 @@ fun main(args: Array<String>) {
     val thumbnailResolution = config.extract<Int>("album_art.resolution.thumb")
     println(thumbnailResolution)
 
-    File(mp3Root).walk().filter{
-        it.extension == "mp3"
+    File(flacRoot).walk().filter{
+        it.extension == "flac"
     }.forEach { println(it.name) }
 }
 
