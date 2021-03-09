@@ -51,3 +51,7 @@ target/
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
+
+### Misc ###
+flac.db
+flac.sql
