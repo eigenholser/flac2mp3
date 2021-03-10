@@ -36,21 +36,25 @@ fun main(args: Array<String>) {
         .start()
         .waitFor()
     */
+    
     val db = DbSettings.db
     FlacDatabase.createDatabase()
 
-    File(flacRoot).walk().filter {
-        it.extension == "flac"
-    }.forEach { file ->
-        println("flacfile: $file")
-        print("fsize: ${Files.getAttribute(file.toPath(), "size")}  ")
-        println("mtime: ${Files.getAttribute(file.toPath(), "lastModifiedTime")}")
-        val flacfile = file.absolutePath
-        val fsize = Files.getAttribute(file.toPath(), "size") as Long
-        val mtime = Files.getAttribute(file.toPath(), "lastModifiedTime") as FileTime
-        val tags = FlacTag.readFlacTags(flacfile)
-        println(tags)
-        FlacDatabase.insertFlac(flacfile, tags.cddb, tags.track, fsize, mtime.toMillis())
-    }
+    File(flacRoot)
+        .walk()
+        .filter {
+            it.extension == "flac"
+        }
+        .forEach { file ->
+            println("flacfile: $file")
+            print("fsize: ${Files.getAttribute(file.toPath(), "size")}  ")
+            println("mtime: ${Files.getAttribute(file.toPath(), "lastModifiedTime")}")
+            val flacfile = file.absolutePath
+            val fsize = Files.getAttribute(file.toPath(), "size") as Long
+            val mtime = Files.getAttribute(file.toPath(), "lastModifiedTime") as FileTime
+            val tags = FlacTag.readFlacTags(flacfile)
+            println(tags)
+            FlacDatabase.insertFlac(flacfile, tags.cddb, tags.track, fsize, mtime.toMillis())
+        }
 }
 
