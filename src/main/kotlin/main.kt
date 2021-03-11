@@ -24,6 +24,9 @@ fun main(args: Array<String>) {
     val thumbnailResolution = config.extract<Int>("album_art.resolution.thumb")
     println(thumbnailResolution)
 
+    //ImageScaler.scaleImage("src/main/resources/image.jpg", "src/main/resources/", DestType.THUMB)
+    //ImageScaler.scaleImage("src/main/resources/image.jpg", "src/main/resources/")
+
     /*
     val process = ProcessBuilder(
         //"/bin/ls", "-l", "/")
