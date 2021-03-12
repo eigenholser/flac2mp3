@@ -11,7 +11,7 @@ Scan FLAC library and convert new tracks to MP3 with metadata.
 
 ## Configuration
 
-Create a configuration properties file with the name `flac2mp3.properties` in
+Create a configuration file with the name `flac2mp3.conf` in
 your $HOME directory:
 
     flac_root = /home/null/Music/flac2mp3-dev/flac

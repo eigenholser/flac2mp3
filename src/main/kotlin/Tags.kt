@@ -12,6 +12,7 @@ data class FlacTags(val artist: String, val album: String, val title: String,
 
 object Tag {
     fun readFlacTags(flacFile: String): FlacTags {
+
         val f = AudioFileIO.read(File(flacFile))
         val tag = f.tag
         val artist = tag.getFirst(FieldKey.ARTIST)
@@ -38,6 +39,7 @@ object Tag {
         tag.setField(FieldKey.YEAR, flacTags.year)
         tag.setField(FieldKey.GENRE, flacTags.genre)
         tag.setField(FieldKey.TRACK, flacTags.track)
+        // TODO: How does this work?
 //        tag.createField(FieldKey.valueOf("CDDB"), flacTags.cddb)
         f.commit()
     }
