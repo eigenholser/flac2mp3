@@ -2,6 +2,7 @@ package com.eigenholser.flac2mp3
 
 import com.typesafe.config.ConfigFactory
 import io.github.config4k.extract
+import org.jetbrains.exposed.exceptions.ExposedSQLException
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.attribute.FileTime
@@ -39,7 +40,7 @@ fun main(args: Array<String>) {
         .start()
         .waitFor()
     */
-    
+
     val db = DbSettings.db
     FlacDatabase.createDatabase()
 
@@ -57,7 +58,58 @@ fun main(args: Array<String>) {
             val mtime = Files.getAttribute(file.toPath(), "lastModifiedTime") as FileTime
             val tags = FlacTag.readFlacTags(flacfile)
             println(tags)
-            FlacDatabase.insertFlac(flacfile, tags.cddb, tags.track, fsize, mtime.toMillis())
+            val flacRelativePath = flacfile.removePrefix("$flacRoot/")
+
+            //val flacRow = FlacDatabase.getByCddbAndTrack(tags.cddb, tags.track)
+
+            try {
+                FlacDatabase.insertFlac(flacRelativePath, tags.cddb, tags.track, fsize, mtime.toMillis())
+            } catch (e: ExposedSQLException) {
+                println("EXISTS: $tags")
+            }
         }
+
+    var switchAlbum = false
+    var nextAlbum = ""
+
+    FlacDatabase.getAllFlacRows().forEach {
+        val flacFileAbsolute = File("$flacRoot/${it[Flac.flacfile]}")
+        val flacAlbumPathAbsolute = File(flacFileAbsolute.toString().removeSuffix("/${flacFileAbsolute.name}"))
+        val flacAlbumArtFile = File("$flacAlbumPathAbsolute/$albumArtFile")
+        val flacFileTrackName = flacFileAbsolute.name
+        val currentAlbum = flacAlbumPathAbsolute.toString()
+            .removePrefix("$flacRoot/")
+            .removeSuffix("/${flacFileTrackName}")
+
+        if (!switchAlbum && currentAlbum != nextAlbum) {
+            switchAlbum = true
+            nextAlbum = currentAlbum
+        }
+
+        val trackIsCurrent = isTrackCurrent(flacFileAbsolute, it[Flac.fsize], it[Flac.mtime])
+
+        if (switchAlbum) {
+            switchAlbum = false
+            println()
+            println("*******************************************")
+            println(flacAlbumPathAbsolute)
+            print("$flacAlbumArtFile ")
+            println(if (flacAlbumArtFile.exists()) "EXISTS" else "NOTEXISTS")
+            println("Current Album: $currentAlbum")
+        }
+
+        println(flacFileAbsolute)
+    }
+}
+
+fun isTrackCurrent(flacFileAbsolutePath: File, storedFsize: Long, storedMtime: Long): Boolean {
+    val fsize = Files.getAttribute(flacFileAbsolutePath.toPath(), "size")
+    val mtime = Files.getAttribute(flacFileAbsolutePath.toPath(), "lastModifiedTime") as FileTime
+
+    if (storedFsize == fsize && storedMtime == mtime.toMillis()) {
+        return true
+    }
+
+    return false
 }
 
