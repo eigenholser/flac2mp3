@@ -32,26 +32,26 @@ object ImageScaler {
     }
 
     fun scaleImage(src: String, dest: String) {
-        val imp = IJ.openImage(src)
+        val imp = IJ.openImage("$src/album_art.png")
         val ip = imp.processor
 
         imp.processor = makeThumb(ip)
-        IJ.saveAs(imp, destFormat, dest.plus(thumbFilename))
+        IJ.saveAs(imp, destFormat, "$dest/$thumbFilename")
 
         imp.processor = makeCover(ip)
-        IJ.saveAs(imp, destFormat, dest.plus(coverFilename))
+        IJ.saveAs(imp, destFormat, "$dest/$coverFilename")
     }
 
     fun scaleImage(src: String, dest: String, destType: DestType) {
-        val imp = IJ.openImage(src)
+        val imp = IJ.openImage("$src/album_art.png")
         val ip = imp.processor
 
         if (destType == DestType.THUMB) {
             imp.processor = makeThumb(ip)
-            IJ.saveAs(imp, destFormat, dest.plus(thumbFilename))
+            IJ.saveAs(imp, destFormat, dest.plus("$dest/$thumbFilename"))
         } else if (destType == DestType.COVER) {
             imp.processor = makeCover(ip)
-            IJ.saveAs(imp, destFormat, dest.plus(coverFilename))
+            IJ.saveAs(imp, destFormat, dest.plus("$dest/$coverFilename"))
         }
     }
 }

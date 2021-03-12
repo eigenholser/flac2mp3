@@ -25,22 +25,6 @@ fun main(args: Array<String>) {
     val thumbnailResolution = config.extract<Int>("album_art.resolution.thumb")
     println(thumbnailResolution)
 
-    //ImageScaler.scaleImage("src/main/resources/image.jpg", "src/main/resources/", DestType.THUMB)
-    //ImageScaler.scaleImage("src/main/resources/image.jpg", "src/main/resources/")
-
-    /*
-    val process = ProcessBuilder(
-        //"/bin/ls", "-l", "/")
-        "/usr/bin/play",
-        System.getenv("HOME") + "/Music/mp3/Deep_Purple/Live_Long_Beach_Arena_2-27-76_Disc_01/01.Intro.mp3"
-    )
-        .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-        .redirectError(ProcessBuilder.Redirect.INHERIT)
-
-        .start()
-        .waitFor()
-    */
-
     val db = DbSettings.db
     FlacDatabase.createDatabase()
 
@@ -56,7 +40,7 @@ fun main(args: Array<String>) {
             val flacfile = file.absolutePath
             val fsize = Files.getAttribute(file.toPath(), "size") as Long
             val mtime = Files.getAttribute(file.toPath(), "lastModifiedTime") as FileTime
-            val tags = FlacTag.readFlacTags(flacfile)
+            val tags = Tag.readFlacTags(flacfile)
             println(tags)
             val flacRelativePath = flacfile.removePrefix("$flacRoot/")
 
@@ -81,6 +65,9 @@ fun main(args: Array<String>) {
             .removePrefix("$flacRoot/")
             .removeSuffix("/${flacFileTrackName}")
 
+        val mp3AlbumPathAbsolute = File("$mp3Root/$currentAlbum").toPath()
+        val mp3FileAbsolute = File("$mp3AlbumPathAbsolute/${flacFileAbsolute.nameWithoutExtension}.mp3")
+
         if (!switchAlbum && currentAlbum != nextAlbum) {
             switchAlbum = true
             nextAlbum = currentAlbum
@@ -90,15 +77,15 @@ fun main(args: Array<String>) {
 
         if (switchAlbum) {
             switchAlbum = false
-            println()
-            println("*******************************************")
-            println(flacAlbumPathAbsolute)
-            print("$flacAlbumArtFile ")
-            println(if (flacAlbumArtFile.exists()) "EXISTS" else "NOTEXISTS")
-            println("Current Album: $currentAlbum")
+            Files.createDirectories(mp3AlbumPathAbsolute)
+            ImageScaler.scaleImage(flacAlbumPathAbsolute.toString(), mp3AlbumPathAbsolute.toString())
         }
 
-        println(flacFileAbsolute)
+        if (!trackIsCurrent || !mp3FileAbsolute.exists()) {
+            LameFlac2Mp3.flac2mp3(flacFileAbsolute.toString(), mp3FileAbsolute.toString(), mp3AlbumPathAbsolute)
+            val flacTags = Tag.readFlacTags(flacFileAbsolute.toString())
+            Tag.writeMp3Tags(mp3FileAbsolute.toString(), mp3AlbumPathAbsolute.toString(), flacTags)
+        }
     }
 }
 
