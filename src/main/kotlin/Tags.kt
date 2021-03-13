@@ -5,6 +5,7 @@ import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.id3.ID3v23Tag
 import org.jaudiotagger.tag.images.StandardArtwork
 import java.io.File
+import java.util.logging.Logger
 
 data class FlacTags(val artist: String, val album: String, val title: String,
     val year: String, val genre: String, val track: String, val cddb: String
@@ -28,11 +29,15 @@ object Tag {
     }
 
     fun writeMp3Tags(mp3File: String, albumArtFile: String, flacTags: FlacTags): Unit {
-        val albumArt = StandardArtwork.createArtworkFromFile(File("$albumArtFile/cover.jpg"))
         val f = AudioFileIO.read(File(mp3File))
         f.tag = ID3v23Tag()
         val tag = f.tag
-        tag.addField(albumArt)
+        try {
+            val albumArt = StandardArtwork.createArtworkFromFile(File("$albumArtFile/cover.jpg"))
+            tag.addField(albumArt)
+        }catch (e: Throwable){
+            Logger.getLogger("Tags Warning: ").warning("Bad file path: File ".plus("$albumArtFile/cover.jpg").plus(" not found"))
+        }
         tag.setField(FieldKey.ARTIST, flacTags.artist)
         tag.setField(FieldKey.ALBUM, flacTags.album)
         tag.setField(FieldKey.TITLE, flacTags.title)
