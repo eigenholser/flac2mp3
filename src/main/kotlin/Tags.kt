@@ -5,6 +5,7 @@ import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.id3.ID3v23Tag
 import org.jaudiotagger.tag.images.StandardArtwork
 import java.io.File
+import java.io.FileNotFoundException
 import java.lang.IllegalArgumentException
 import java.util.logging.Logger
 import java.math.BigInteger
@@ -60,7 +61,7 @@ object Tag {
         try {
             val albumArt = StandardArtwork.createArtworkFromFile(File("$albumArtFile/cover.jpg"))
             tag.addField(albumArt)
-        } catch (e: Throwable) {
+        } catch (e: FileNotFoundException) {
             Logger.getLogger("Tags Warning: ")
                 .warning("Bad file path: File ".plus("$albumArtFile/cover.jpg").plus(" not found"))
         }

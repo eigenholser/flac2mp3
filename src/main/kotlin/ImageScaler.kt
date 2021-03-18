@@ -4,6 +4,7 @@ import ij.IJ
 import ij.process.ImageProcessor
 import org.jetbrains.exposed.sql.exists
 import java.io.File
+import java.lang.NullPointerException
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.logging.Logger
@@ -43,7 +44,7 @@ object ImageScaler {
 
             imp.processor = makeCover(ip)
             IJ.saveAs(imp, destFormat, "$dest/$coverFilename")
-        }catch (e: Throwable){
+        } catch (e: NullPointerException) {
             Logger.getLogger("ImageScaler Warning: ").warning("Bad file path: File ".plus("$src/album_art.png").plus(" not found"))
         }
 
@@ -61,7 +62,7 @@ object ImageScaler {
                 imp.processor = makeCover(ip)
                 IJ.saveAs(imp, destFormat, dest.plus("$dest/$coverFilename"))
             }
-        }catch (e: Throwable){
+        } catch (e: NullPointerException) {
             Logger.getLogger("ImageScaler Warning: ").warning("Bad file path: File ".plus("$src/album_art.png").plus(" not found"))
         }
     }
