@@ -18,7 +18,7 @@ object DbSettings {
 object Flac : Table() {
     val id = integer("id").autoIncrement()
     val flacfile = varchar("flacfile", length = 1024)
-    val cddbid = varchar("cddbid", length = 20)
+    val cddbid = varchar("cddbid", length = 32)
     val track = varchar("track", length = 2)
     val fsize = long("fsize")
     val mtime = long("mtime")
