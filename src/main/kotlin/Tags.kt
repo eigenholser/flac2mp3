@@ -68,7 +68,6 @@ object Tag {
         tag.setField(FieldKey.ARTIST, flacTags.artist)
         tag.setField(FieldKey.ALBUM, flacTags.album)
         tag.setField(FieldKey.TITLE, flacTags.title)
-        println(flacTags)
         tag.setField(FieldKey.YEAR, flacTags.year)
         tag.setField(FieldKey.GENRE, flacTags.genre)
         tag.setField(FieldKey.TRACK, flacTags.track)
