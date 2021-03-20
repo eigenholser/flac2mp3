@@ -6,10 +6,9 @@ import org.jaudiotagger.tag.id3.ID3v23Tag
 import org.jaudiotagger.tag.images.StandardArtwork
 import java.io.File
 import java.io.FileNotFoundException
-import java.lang.IllegalArgumentException
-import java.util.logging.Logger
 import java.math.BigInteger
 import java.security.MessageDigest
+import java.util.logging.Logger
 
 data class FlacTags(
     val artist: String, val album: String, val title: String,
@@ -22,8 +21,9 @@ fun md5(input:String): String {
 }
 
 object Tag {
-    fun readFlacTags(flacFile: String): FlacTags {
+    val logger = Logger.getLogger("Tags")
 
+    fun readFlacTags(flacFile: String): FlacTags {
         val f = AudioFileIO.read(File(flacFile))
         val tag = f.tag
         val artist = tag.getFirst(FieldKey.ARTIST)
@@ -49,21 +49,18 @@ object Tag {
         } else {
             tag.getFirst("CDDB")
         }
-        val tags = FlacTags(artist, album, title, year, genre, track, cddb)
-
-        return tags
+        return FlacTags(artist, album, title, year, genre, track, cddb)
     }
 
-    fun writeMp3Tags(mp3File: String, albumArtFile: String, flacTags: FlacTags): Unit {
+    fun writeMp3Tags(mp3File: String, mp3AlbumPath: String, flacTags: FlacTags): Unit {
         val f = AudioFileIO.read(File(mp3File))
         f.tag = ID3v23Tag()
         val tag = f.tag
         try {
-            val albumArt = StandardArtwork.createArtworkFromFile(File("$albumArtFile/cover.jpg"))
+            val albumArt = StandardArtwork.createArtworkFromFile(File("$mp3AlbumPath/${Config.coverArtFile}"))
             tag.addField(albumArt)
         } catch (e: FileNotFoundException) {
-            Logger.getLogger("Tags Warning: ")
-                .warning("Bad file path: File ".plus("$albumArtFile/cover.jpg").plus(" not found"))
+            ImageScaler.logger.warning("Album art not found: $mp3AlbumPath/${Config.coverArtFile}")
         }
         tag.setField(FieldKey.ARTIST, flacTags.artist)
         tag.setField(FieldKey.ALBUM, flacTags.album)
