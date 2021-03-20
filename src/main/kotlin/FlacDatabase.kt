@@ -8,7 +8,7 @@ import java.sql.Connection
 
 object DbSettings {
     val db by lazy {
-        val filename = File("flac.db").absolutePath
+        val filename = File(Config.flacDb).absolutePath
         val url = "jdbc:sqlite:$filename"
         Database.connect(url, "org.sqlite.JDBC")
         TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE

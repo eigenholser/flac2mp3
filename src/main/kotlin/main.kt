@@ -22,7 +22,6 @@ fun main(args: Array<String>) {
             val fsize = Files.getAttribute(file.toPath(), "size") as Long
             val mtime = Files.getAttribute(file.toPath(), "lastModifiedTime") as FileTime
             val tags = Tag.readFlacTags(flacfile)
-            println(tags)
             val flacRelativePath = flacfile.removePrefix("${Config.flacRoot}/")
 
             //val flacRow = FlacDatabase.getByCddbAndTrack(tags.cddb, tags.track)
