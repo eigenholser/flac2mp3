@@ -69,7 +69,7 @@ object Tag {
         tag.setField(FieldKey.GENRE, flacTags.genre)
         tag.setField(FieldKey.TRACK, flacTags.track)
         // TODO: How does this work?
-//        tag.setField(FieldKey.valueOf("CDDB"), flacTags.cddb)
+//        tag.createField(FieldKey.valueOf("CDDB"), flacTags.cddb)
         f.commit()
     }
 }
