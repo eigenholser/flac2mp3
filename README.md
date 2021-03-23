@@ -14,12 +14,17 @@ Scan FLAC library and convert new tracks to MP3 with metadata.
 Create a configuration file with the name `flac2mp3.conf` in
 your $HOME directory:
 
-    flac_root = /home/null/Music/flac2mp3-dev/flac
-    mp3_root = /home/null/Music/flac2mp3-dev/mp3
+    flacdb.filename = flac.db
+    flac_root = /srv/data/music/flac
+    mp3_root = /srv/data/music/mp3
     album_art.resolution.thumb = 200
     album_art.resolution.cover = 1000
-    album_art.name = album_art.png
-
+    album_art.name.full = album_art.png
+    album_art.name.cover = cover.jpg
+    album_art.name.thumb = thumb.jpg
+    mp3.bitrate = 192
+    mp3.quality = 0
+    lame.path = /usr/bin/lame
 
 ## References
 * [JAudioTagger Documentation](http://www.jthink.net/jaudiotagger/examples_read.jsp)

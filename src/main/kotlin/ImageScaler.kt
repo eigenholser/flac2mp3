@@ -15,9 +15,11 @@ enum class DestType {
 }
 
 object ImageScaler {
+    val logger = Logger.getLogger("ImageScaler")
+
     // TODO: Add to config?
-    val coverFilename = "cover.jpg"
-    val thumbFilename = "thumb.jpg"
+    val coverFilename = Config.coverArtFile
+    val thumbFilename = Config.thumbArtFile
     val destFormat = "jpg"
 
     private fun computeScaleFactor(xAxis: Int, srcSize: Int): Double {
@@ -36,7 +38,7 @@ object ImageScaler {
 
     fun scaleImage(src: String, dest: String) {
         try {
-            val imp = IJ.openImage("$src/album_art.png")
+            val imp = IJ.openImage("$src/${Config.albumArtFile}")
             val ip = imp.processor
 
             imp.processor = makeThumb(ip)
@@ -45,7 +47,7 @@ object ImageScaler {
             imp.processor = makeCover(ip)
             IJ.saveAs(imp, destFormat, "$dest/$coverFilename")
         } catch (e: NullPointerException) {
-            Logger.getLogger("ImageScaler Warning: ").warning("Bad file path: File ".plus("$src/album_art.png").plus(" not found"))
+            logger.warning("Album art not found: $src/${Config.albumArtFile}")
         }
 
     }
@@ -63,7 +65,7 @@ object ImageScaler {
                 IJ.saveAs(imp, destFormat, dest.plus("$dest/$coverFilename"))
             }
         } catch (e: NullPointerException) {
-            Logger.getLogger("ImageScaler Warning: ").warning("Bad file path: File ".plus("$src/album_art.png").plus(" not found"))
+            logger.warning("Album art not found: $src/${Config.albumArtFile}")
         }
     }
 }

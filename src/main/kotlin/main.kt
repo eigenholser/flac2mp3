@@ -22,7 +22,6 @@ fun main(args: Array<String>) {
             val fsize = Files.getAttribute(file.toPath(), "size") as Long
             val mtime = Files.getAttribute(file.toPath(), "lastModifiedTime") as FileTime
             val tags = Tag.readFlacTags(flacfile)
-            println(tags)
             val flacRelativePath = flacfile.removePrefix("${Config.flacRoot}/")
 
             //val flacRow = FlacDatabase.getByCddbAndTrack(tags.cddb, tags.track)
@@ -49,20 +48,18 @@ fun main(args: Array<String>) {
         val mp3AlbumPathAbsolute = File("${Config.mp3Root}/$currentAlbum").toPath()
         val mp3FileAbsolute = File("$mp3AlbumPathAbsolute/${flacFileAbsolute.nameWithoutExtension}.mp3")
 
-        if (!switchAlbum && currentAlbum != nextAlbum) {
-            switchAlbum = true
-            nextAlbum = currentAlbum
-        }
-
         val trackIsCurrent = isTrackCurrent(flacFileAbsolute, it[Flac.fsize], it[Flac.mtime])
 
-        if (switchAlbum) {
-            switchAlbum = false
-            Files.createDirectories(mp3AlbumPathAbsolute)
-            ImageScaler.scaleImage(flacAlbumPathAbsolute.toString(), mp3AlbumPathAbsolute.toString())
-        }
-
         if (!trackIsCurrent || !mp3FileAbsolute.exists()) {
+            if (!switchAlbum && currentAlbum != nextAlbum) {
+                switchAlbum = true
+                nextAlbum = currentAlbum
+            }
+            if (switchAlbum) {
+                switchAlbum = false
+                Files.createDirectories(mp3AlbumPathAbsolute)
+                ImageScaler.scaleImage(flacAlbumPathAbsolute.toString(), mp3AlbumPathAbsolute.toString())
+            }
             LameFlac2Mp3.flac2mp3(flacFileAbsolute.toString(), mp3FileAbsolute.toString(), mp3AlbumPathAbsolute)
             val flacTags = Tag.readFlacTags(flacFileAbsolute.toString())
             Tag.writeMp3Tags(mp3FileAbsolute.toString(), mp3AlbumPathAbsolute.toString(), flacTags)
