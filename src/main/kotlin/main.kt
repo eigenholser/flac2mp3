@@ -37,10 +37,18 @@ fun main(args: Array<String>) {
 
     var switchAlbum = false
     var nextAlbum = ""
+    val trackFilterName = FilterName.PROCESS_TRACK
 
     FlacDatabase.getAllFlacRows()
         .map (::convertRow)
-        .filter(::processTest)
+        .filter {
+            val trackFilterClass = when (trackFilterName) {
+                FilterName.PROCESS_TRACK -> RowFilter.ProcessTrack(it)
+                FilterName.TRACK_CURRENT -> RowFilter.TrackCurrent(it)
+                FilterName.MP3_FILE_EXISTS -> RowFilter.Mp3FileExists(it)
+            }
+            handleProcessFilter(trackFilterClass)
+        }
         .forEach {
             println(it)
 
@@ -98,20 +106,27 @@ fun mp3FileExists(trackData: TrackData): Boolean {
     return trackData.mp3FileAbsolute.exists()
 }
 
-fun processTest(trackData: TrackData): Boolean {
+fun processTrack(trackData: TrackData): Boolean {
     return (!isTrackCurrent(trackData) || !mp3FileExists(trackData))
 }
 
-sealed class RowFilter
-data class Mp3FileExists(val trackData: TrackData) : RowFilter()
-data class TrackCurrent(val trackData: TrackData) : RowFilter()
-data class ProcessTest(val trackData: TrackData) : RowFilter()
+enum class FilterName {
+    MP3_FILE_EXISTS,
+    TRACK_CURRENT,
+    PROCESS_TRACK
+}
 
-fun handleProcessFilter(filter: RowFilter): Boolean =
-    when (filter) {
-        is Mp3FileExists -> mp3FileExists(filter.trackData)
-        is TrackCurrent -> isTrackCurrent(filter.trackData)
-        is ProcessTest -> processTest(filter.trackData)
+sealed class RowFilter() {
+    data class Mp3FileExists(val trackData: TrackData) : RowFilter()
+    data class TrackCurrent(val trackData: TrackData) : RowFilter()
+    data class ProcessTrack(val trackData: TrackData) : RowFilter()
+}
+
+fun handleProcessFilter(filterClass: RowFilter): Boolean =
+    when (filterClass) {
+        is RowFilter.Mp3FileExists -> mp3FileExists(filterClass.trackData)
+        is RowFilter.TrackCurrent -> isTrackCurrent(filterClass.trackData)
+        is RowFilter.ProcessTrack -> processTrack(filterClass.trackData)
     }
 
 
