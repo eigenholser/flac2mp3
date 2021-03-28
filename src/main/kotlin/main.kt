@@ -37,18 +37,10 @@ fun main(args: Array<String>) {
 
     var switchAlbum = false
     var nextAlbum = ""
-    val trackFilterName = FilterName.PROCESS_TRACK
 
     FlacDatabase.getAllFlacRows()
         .map (::convertRow)
-        .filter {
-            val trackFilterClass = when (trackFilterName) {
-                FilterName.PROCESS_TRACK -> RowFilter.ProcessTrack(it)
-                FilterName.TRACK_CURRENT -> RowFilter.TrackCurrent(it)
-                FilterName.MP3_FILE_EXISTS -> RowFilter.Mp3FileExists(it)
-            }
-            handleProcessFilter(trackFilterClass)
-        }
+        .filter (::processTrack)
         .forEach {
             println(it)
 
@@ -109,24 +101,3 @@ fun mp3FileExists(trackData: TrackData): Boolean {
 fun processTrack(trackData: TrackData): Boolean {
     return (!isTrackCurrent(trackData) || !mp3FileExists(trackData))
 }
-
-enum class FilterName {
-    MP3_FILE_EXISTS,
-    TRACK_CURRENT,
-    PROCESS_TRACK
-}
-
-sealed class RowFilter() {
-    data class Mp3FileExists(val trackData: TrackData) : RowFilter()
-    data class TrackCurrent(val trackData: TrackData) : RowFilter()
-    data class ProcessTrack(val trackData: TrackData) : RowFilter()
-}
-
-fun handleProcessFilter(filterClass: RowFilter): Boolean =
-    when (filterClass) {
-        is RowFilter.Mp3FileExists -> mp3FileExists(filterClass.trackData)
-        is RowFilter.TrackCurrent -> isTrackCurrent(filterClass.trackData)
-        is RowFilter.ProcessTrack -> processTrack(filterClass.trackData)
-    }
-
-
