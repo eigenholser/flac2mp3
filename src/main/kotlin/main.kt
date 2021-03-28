@@ -16,9 +16,7 @@ fun main(args: Array<String>) {
 
     File(Config.flacRoot)
         .walk()
-        .filter {
-            it.extension == "flac"
-        }
+        .filter {it.extension == "flac"}
         .forEach { file ->
             val flacfile = file.absolutePath
             val fsize = Files.getAttribute(file.toPath(), "size") as Long
