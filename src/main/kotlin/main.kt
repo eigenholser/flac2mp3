@@ -30,6 +30,7 @@ fun main(args: Array<String>) {
             //val flacRow = FlacDatabase.getByCddbAndTrack(tags.cddb, tags.track)
             convertRow(flacfile, fsize, mtime.toMillis())
         }
+
         .filter (::shouldWeProcessThisTrack)
         .forEach {
             println(it)
@@ -48,6 +49,7 @@ fun main(args: Array<String>) {
                     it.mp3AlbumPathAbsolute.toString()
                 )
             }
+            // TODO: Only do the stuff below if we're building new MP3
             LameFlac2Mp3.flac2mp3(
                 it.flacFileAbsolute.toString(),
                 it.mp3FileAbsolute.toString(),
@@ -55,9 +57,12 @@ fun main(args: Array<String>) {
             )
             val flacTags = Tag.readFlacTags(it.flacFileAbsolute.toString())
             Tag.writeMp3Tags(it.mp3FileAbsolute.toString(), it.mp3AlbumPathAbsolute.toString(), flacTags)
-            // TODO: Delete MP3 cover.jpg
-            // TODO: Store MP3 cover.jpg mtime and fsize in DB album table.
+
+            // TODO: Only do the stuff below if we're updating album art
+            // TODO: Write the code to update album art.
         }
+
+
 }
 
 data class TrackData(
@@ -96,6 +101,16 @@ fun mp3FileExists(trackData: TrackData): Boolean {
     return trackData.mp3FileAbsolute.exists()
 }
 
+fun isAlbumArtCurrent(trackData: TrackData): Boolean {
+    // TODO: check state
+    return true
+}
+
 fun shouldWeProcessThisTrack(trackData: TrackData): Boolean {
-    return (!isTrackCurrent(trackData) || !mp3FileExists(trackData))
+    return (!isTrackCurrent(trackData) || !mp3FileExists(trackData) || shouldWeUpdateAlbumArt(trackData))
+}
+
+fun shouldWeUpdateAlbumArt(trackData: TrackData): Boolean {
+    // do something
+    return false
 }
