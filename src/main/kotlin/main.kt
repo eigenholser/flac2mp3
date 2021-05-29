@@ -14,10 +14,13 @@ fun main(args: Array<String>) {
     val db = DbSettings.db
     FlacDatabase.createDatabase()
 
+    var switchAlbum = false
+    var nextAlbum = ""
+
     File(Config.flacRoot)
         .walk()
         .filter {it.extension == "flac"}
-        .forEach { file ->
+        .map { file ->
             val flacfile = file.absolutePath
             val fsize = Files.getAttribute(file.toPath(), "size") as Long
             val mtime = Files.getAttribute(file.toPath(), "lastModifiedTime") as FileTime
@@ -25,20 +28,9 @@ fun main(args: Array<String>) {
             val flacRelativePath = flacfile.removePrefix("${Config.flacRoot}/")
 
             //val flacRow = FlacDatabase.getByCddbAndTrack(tags.cddb, tags.track)
-
-            try {
-                FlacDatabase.insertFlac(flacRelativePath, tags.cddb, tags.track, fsize, mtime.toMillis())
-            } catch (e: ExposedSQLException) {
-                println("EXISTS: $tags")
-            }
+            convertRow(flacfile, fsize, mtime.toMillis())
         }
-
-    var switchAlbum = false
-    var nextAlbum = ""
-
-    FlacDatabase.getAllFlacRows()
-        .map (::convertRow)
-        .filter (::processTrack)
+        .filter (::shouldWeProcessThisTrack)
         .forEach {
             println(it)
 
@@ -49,6 +41,8 @@ fun main(args: Array<String>) {
             if (switchAlbum) {
                 switchAlbum = false
                 Files.createDirectories(it.mp3AlbumPathAbsolute)
+                // TODO: Does MP3 cover.jpg exist && FLAC album_art.png exist?
+                // TODO: If above is true, is FLAC album_art.png newer than MP3 cover.jpg?
                 ImageScaler.scaleImage(
                     it.flacAlbumPathAbsolute.toString(),
                     it.mp3AlbumPathAbsolute.toString()
@@ -61,6 +55,8 @@ fun main(args: Array<String>) {
             )
             val flacTags = Tag.readFlacTags(it.flacFileAbsolute.toString())
             Tag.writeMp3Tags(it.mp3FileAbsolute.toString(), it.mp3AlbumPathAbsolute.toString(), flacTags)
+            // TODO: Delete MP3 cover.jpg
+            // TODO: Store MP3 cover.jpg mtime and fsize in DB album table.
         }
 }
 
@@ -71,7 +67,11 @@ data class TrackData(
 )
 
 fun convertRow(row: ResultRow): TrackData {
-    val flacFileAbsolute = File("${Config.flacRoot}/${row[Flac.flacfile]}")
+    return convertRow(row[Flac.flacfile], row[Flac.fsize], row[Flac.mtime])
+}
+
+fun convertRow(flacfile: String, fsize: Long, mtime: Long): TrackData {
+    val flacFileAbsolute = File("${Config.flacRoot}/${flacfile}")
     val flacAlbumPathAbsolute = File(flacFileAbsolute.toString().removeSuffix("/${flacFileAbsolute.name}"))
     val flacFileTrackName = flacFileAbsolute.name
     val currentAlbum = flacAlbumPathAbsolute.toString()
@@ -82,7 +82,7 @@ fun convertRow(row: ResultRow): TrackData {
 
     return TrackData(
         flacFileAbsolute, flacAlbumPathAbsolute, flacFileTrackName,
-        currentAlbum, mp3AlbumPathAbsolute, mp3FileAbsolute, row[Flac.fsize], row[Flac.mtime]
+        currentAlbum, mp3AlbumPathAbsolute, mp3FileAbsolute, fsize, mtime
     )
 }
 
@@ -96,6 +96,6 @@ fun mp3FileExists(trackData: TrackData): Boolean {
     return trackData.mp3FileAbsolute.exists()
 }
 
-fun processTrack(trackData: TrackData): Boolean {
+fun shouldWeProcessThisTrack(trackData: TrackData): Boolean {
     return (!isTrackCurrent(trackData) || !mp3FileExists(trackData))
 }
