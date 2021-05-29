@@ -3,6 +3,7 @@ package com.eigenholser.flac2mp3
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.id3.ID3v23Tag
+import org.jaudiotagger.tag.images.Artwork
 import org.jaudiotagger.tag.images.StandardArtwork
 import java.io.File
 import java.io.FileNotFoundException
@@ -56,6 +57,7 @@ object Tag {
         val f = AudioFileIO.read(File(mp3File))
         f.tag = ID3v23Tag()
         val tag = f.tag
+        // TODO: Put this try block in addAlbumArtField()
         try {
             val albumArt = StandardArtwork.createArtworkFromFile(File("$mp3AlbumPath/${Config.coverArtFile}"))
             tag.addField(albumArt)
@@ -71,5 +73,25 @@ object Tag {
         // TODO: How does this work?
 //        tag.createField(FieldKey.valueOf("CDDB"), flacTags.cddb)
         f.commit()
+    }
+
+    fun getAlbumArt(mp3File: File): Artwork {
+        val f = AudioFileIO.read(File(mp3File.path))
+        val tag = f.tag // TODO: Is this null if the MP3 has not been tagged? try/catch?
+        // If this is null there is no artwork?? Prove this hypothesis.
+        return tag.firstArtwork
+    }
+
+    fun addAlbumArtField() {
+
+    }
+
+    fun deleteAlbumArtField() {
+
+    }
+
+    fun updateAlbumArtField() {
+        deleteAlbumArtField()
+        addAlbumArtField()
     }
 }

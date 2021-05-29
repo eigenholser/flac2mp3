@@ -42,8 +42,9 @@ fun main(args: Array<String>) {
             if (switchAlbum) {
                 switchAlbum = false
                 Files.createDirectories(it.mp3AlbumPathAbsolute)
-                // TODO: Does MP3 cover.jpg exist && FLAC album_art.png exist?
-                // TODO: If above is true, is FLAC album_art.png newer than MP3 cover.jpg?
+                // TODO: Does MP3 exist && FLAC album_art.png exist?
+                // TODO: If above is true, is FLAC album_art.png newer than MP3 file?
+                Tag.getAlbumArt(it.mp3FileAbsolute) // TODO: If this is not null... we have album art. Then read mtime on MP3 file.
                 ImageScaler.scaleImage(
                     it.flacAlbumPathAbsolute.toString(),
                     it.mp3AlbumPathAbsolute.toString()
@@ -60,6 +61,8 @@ fun main(args: Array<String>) {
 
             // TODO: Only do the stuff below if we're updating album art
             // TODO: Write the code to update album art.
+
+            // TODO: delete cover.jpg
         }
 
 
