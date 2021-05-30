@@ -16,6 +16,7 @@ fun main(args: Array<String>) {
 
     var switchAlbum = false
     var nextAlbum = ""
+    var prevMp3AlbumPath: Path? = null
 
     File(Config.flacRoot)
         .walk()
@@ -38,6 +39,9 @@ fun main(args: Array<String>) {
             if (!switchAlbum && it.currentAlbum != nextAlbum) {
                 switchAlbum = true
                 nextAlbum = it.currentAlbum
+                // XXX: Delete previous cover.jpg on album switch
+                deleteMp3CoverArt(prevMp3AlbumPath)
+                prevMp3AlbumPath = it.mp3AlbumPathAbsolute
             }
             if (switchAlbum) {
                 switchAlbum = false
@@ -61,11 +65,9 @@ fun main(args: Array<String>) {
 
             // TODO: Only do the stuff below if we're updating album art
             // TODO: Write the code to update album art.
-
-            // TODO: delete cover.jpg
         }
-
-
+    // Get the last album
+    deleteMp3CoverArt(prevMp3AlbumPath)
 }
 
 data class TrackData(
@@ -115,5 +117,13 @@ fun shouldWeProcessThisTrack(trackData: TrackData): Boolean {
 
 fun shouldWeUpdateAlbumArt(trackData: TrackData): Boolean {
     // do something
+    return false
+}
+
+fun deleteMp3CoverArt(mp3AlbumPathAbsolute: Path?): Boolean {
+    if (mp3AlbumPathAbsolute != null) {
+        val mp3CoverArtFile = File("${mp3AlbumPathAbsolute.toString()}/${Config.coverArtFile}")
+        return mp3CoverArtFile.delete()
+    }
     return false
 }
