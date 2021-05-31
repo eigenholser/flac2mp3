@@ -43,7 +43,10 @@ fun main(args: Array<String>) {
                 // TODO: If above is true, is FLAC album_art.png newer than MP3 file?
                 // TODO: If this is not null... we have album art. Then read mtime on MP3 file.
                 if (mp3FileExists(it)) {
-                    Tag.getAlbumArt(it.mp3FileAbsolute)
+                    val flag = Tag.albumArtExists(it.mp3FileAbsolute)
+                    if (!flag) {
+                        println("******************** ALBUM ART EXISTS ********************")
+                    }
                 }
 
                 ImageScaler.scaleImage(
