@@ -2,7 +2,7 @@ package com.eigenholser.flac2mp3
 
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
-import org.jaudiotagger.tag.id3.ID3v23Tag
+import org.jaudiotagger.tag.id3.ID3v24Tag
 import org.jaudiotagger.tag.images.Artwork
 import org.jaudiotagger.tag.images.StandardArtwork
 import java.io.File
@@ -55,7 +55,7 @@ object Tag {
 
     fun writeMp3Tags(mp3File: String, mp3AlbumPath: String, flacTags: FlacTags): Unit {
         val f = AudioFileIO.read(File(mp3File))
-        f.tag = ID3v23Tag()
+        f.tag = ID3v24Tag()
         val tag = f.tag
         // TODO: Put this try block in addAlbumArtField()
         try {

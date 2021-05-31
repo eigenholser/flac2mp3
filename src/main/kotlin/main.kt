@@ -52,7 +52,7 @@ fun main(args: Array<String>) {
                 )
             }
             // TODO: Only do the stuff below if we're building new MP3
-            if (isTrackCurrent(it)) {
+            if (!isTrackCurrent(it)) {
                 LameFlac2Mp3.flac2mp3(
                     it.flacFileAbsolute.toString(),
                     it.mp3FileAbsolute.toString(),
