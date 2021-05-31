@@ -76,7 +76,7 @@ object Tag {
     }
 
     fun getAlbumArt(mp3File: File): Artwork {
-        val f = AudioFileIO.read(File(mp3File.path))
+        val f = AudioFileIO.read(mp3File)
         val tag = f.tag // TODO: Is this null if the MP3 has not been tagged? try/catch?
         // If this is null there is no artwork?? Prove this hypothesis.
         return tag.firstArtwork

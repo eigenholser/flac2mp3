@@ -25,21 +25,14 @@ fun main(args: Array<String>) {
             val flacfile = file.absolutePath
             val fsize = Files.getAttribute(file.toPath(), "size") as Long
             val mtime = Files.getAttribute(file.toPath(), "lastModifiedTime") as FileTime
-            val tags = Tag.readFlacTags(flacfile)
-            val flacRelativePath = flacfile.removePrefix("${Config.flacRoot}/")
-
-            //val flacRow = FlacDatabase.getByCddbAndTrack(tags.cddb, tags.track)
             convertRow(flacfile, fsize, mtime.toMillis())
         }
-
         .filter (::shouldWeProcessThisTrack)
         .forEach {
             println(it)
-
             if (!switchAlbum && it.currentAlbum != nextAlbum) {
                 switchAlbum = true
                 nextAlbum = it.currentAlbum
-                // XXX: Delete previous cover.jpg on album switch
                 deleteMp3CoverArt(prevMp3AlbumPath)
                 prevMp3AlbumPath = it.mp3AlbumPathAbsolute
             }
@@ -48,20 +41,27 @@ fun main(args: Array<String>) {
                 Files.createDirectories(it.mp3AlbumPathAbsolute)
                 // TODO: Does MP3 exist && FLAC album_art.png exist?
                 // TODO: If above is true, is FLAC album_art.png newer than MP3 file?
-                Tag.getAlbumArt(it.mp3FileAbsolute) // TODO: If this is not null... we have album art. Then read mtime on MP3 file.
+                // TODO: If this is not null... we have album art. Then read mtime on MP3 file.
+                if (mp3FileExists(it)) {
+                    Tag.getAlbumArt(it.mp3FileAbsolute)
+                }
+
                 ImageScaler.scaleImage(
                     it.flacAlbumPathAbsolute.toString(),
                     it.mp3AlbumPathAbsolute.toString()
                 )
             }
             // TODO: Only do the stuff below if we're building new MP3
-            LameFlac2Mp3.flac2mp3(
-                it.flacFileAbsolute.toString(),
-                it.mp3FileAbsolute.toString(),
-                it.mp3AlbumPathAbsolute
-            )
-            val flacTags = Tag.readFlacTags(it.flacFileAbsolute.toString())
-            Tag.writeMp3Tags(it.mp3FileAbsolute.toString(), it.mp3AlbumPathAbsolute.toString(), flacTags)
+            if (isTrackCurrent(it)) {
+                LameFlac2Mp3.flac2mp3(
+                    it.flacFileAbsolute.toString(),
+                    it.mp3FileAbsolute.toString(),
+                    it.mp3AlbumPathAbsolute
+                )
+
+                val flacTags = Tag.readFlacTags(it.flacFileAbsolute.toString())
+                Tag.writeMp3Tags(it.mp3FileAbsolute.toString(), it.mp3AlbumPathAbsolute.toString(), flacTags)
+            }
 
             // TODO: Only do the stuff below if we're updating album art
             // TODO: Write the code to update album art.
@@ -81,7 +81,7 @@ fun convertRow(row: ResultRow): TrackData {
 }
 
 fun convertRow(flacfile: String, fsize: Long, mtime: Long): TrackData {
-    val flacFileAbsolute = File("${Config.flacRoot}/${flacfile}")
+    val flacFileAbsolute = File("${flacfile}")
     val flacAlbumPathAbsolute = File(flacFileAbsolute.toString().removeSuffix("/${flacFileAbsolute.name}"))
     val flacFileTrackName = flacFileAbsolute.name
     val currentAlbum = flacAlbumPathAbsolute.toString()
@@ -97,9 +97,12 @@ fun convertRow(flacfile: String, fsize: Long, mtime: Long): TrackData {
 }
 
 fun isTrackCurrent(trackData: TrackData): Boolean {
-    val fsize = Files.getAttribute(trackData.flacFileAbsolute.toPath(), "size")
-    val mtime = Files.getAttribute(trackData.flacFileAbsolute.toPath(), "lastModifiedTime") as FileTime
-    return (trackData.fsize == fsize && trackData.mtime == mtime.toMillis())
+    if (mp3FileExists(trackData)) {
+        val flacMtime = Files.getAttribute(trackData.flacFileAbsolute.toPath(), "lastModifiedTime") as FileTime
+        val mp3Mtime = Files.getAttribute(trackData.mp3FileAbsolute.toPath(), "lastModifiedTime") as FileTime
+        return (flacMtime.toMillis() < mp3Mtime.toMillis())
+    }
+    return false
 }
 
 fun mp3FileExists(trackData: TrackData): Boolean {
@@ -112,12 +115,12 @@ fun isAlbumArtCurrent(trackData: TrackData): Boolean {
 }
 
 fun shouldWeProcessThisTrack(trackData: TrackData): Boolean {
-    return (!isTrackCurrent(trackData) || !mp3FileExists(trackData) || shouldWeUpdateAlbumArt(trackData))
+    return (!isTrackCurrent(trackData) || shouldWeUpdateAlbumArt(trackData))
 }
 
 fun shouldWeUpdateAlbumArt(trackData: TrackData): Boolean {
     // do something
-    return false
+    return true
 }
 
 fun deleteMp3CoverArt(mp3AlbumPathAbsolute: Path?): Boolean {
