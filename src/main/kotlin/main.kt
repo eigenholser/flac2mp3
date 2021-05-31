@@ -8,15 +8,15 @@ import java.nio.file.Path
 import java.nio.file.attribute.FileTime
 import kotlin.io.path.ExperimentalPathApi
 
+data class ConversionState(var switchAlbum: Boolean = false, var nextAlbum: String = "",
+                           var prevMp3AlbumPath: Path? = null, var albumArtUpdate: Boolean = false)
 
 @ExperimentalPathApi
 fun main(args: Array<String>) {
     val db = DbSettings.db
     FlacDatabase.createDatabase()
 
-    var switchAlbum = false
-    var nextAlbum = ""
-    var prevMp3AlbumPath: Path? = null
+    val state = ConversionState()
 
     File(Config.flacRoot)
         .walk()
@@ -30,14 +30,14 @@ fun main(args: Array<String>) {
         .filter (::shouldWeProcessThisTrack)
         .forEach {
             println(it)
-            if (!switchAlbum && it.currentAlbum != nextAlbum) {
-                switchAlbum = true
-                nextAlbum = it.currentAlbum
-                deleteMp3CoverArt(prevMp3AlbumPath)
-                prevMp3AlbumPath = it.mp3AlbumPathAbsolute
+            if (!state.switchAlbum && it.currentAlbum != state.nextAlbum) {
+                state.switchAlbum = true
+                state.nextAlbum = it.currentAlbum
+                deleteMp3CoverArt(state.prevMp3AlbumPath)
+                state.prevMp3AlbumPath = it.mp3AlbumPathAbsolute
             }
-            if (switchAlbum) {
-                switchAlbum = false
+            if (state.switchAlbum) {
+                state.switchAlbum = false
                 Files.createDirectories(it.mp3AlbumPathAbsolute)
                 // TODO: Does MP3 exist && FLAC album_art.png exist?
                 // TODO: If above is true, is FLAC album_art.png newer than MP3 file?
@@ -45,7 +45,7 @@ fun main(args: Array<String>) {
                 if (mp3FileExists(it)) {
                     val flag = Tag.albumArtExists(it.mp3FileAbsolute)
                     if (!flag) {
-                        println("******************** ALBUM ART EXISTS ********************")
+                        println("******************** ALBUM ART DOES NOT EXIST ********************")
                     }
                 }
 
@@ -54,23 +54,24 @@ fun main(args: Array<String>) {
                     it.mp3AlbumPathAbsolute.toString()
                 )
             }
-            // TODO: Only do the stuff below if we're building new MP3
             if (!isTrackCurrent(it)) {
                 LameFlac2Mp3.flac2mp3(
                     it.flacFileAbsolute.toString(),
                     it.mp3FileAbsolute.toString(),
                     it.mp3AlbumPathAbsolute
                 )
-
                 val flacTags = Tag.readFlacTags(it.flacFileAbsolute.toString())
                 Tag.writeMp3Tags(it.mp3FileAbsolute.toString(), it.mp3AlbumPathAbsolute.toString(), flacTags)
             }
 
             // TODO: Only do the stuff below if we're updating album art
             // TODO: Write the code to update album art.
+            if (state.albumArtUpdate) {
+                println("*************** TODO: UPDATE ALBUM ART ***************")
+            }
         }
     // Get the last album
-    deleteMp3CoverArt(prevMp3AlbumPath)
+    deleteMp3CoverArt(state.prevMp3AlbumPath)
 }
 
 data class TrackData(
