@@ -1,7 +1,10 @@
 package com.eigenholser.flac2mp3
 
 import org.jaudiotagger.audio.AudioFileIO
+import org.jaudiotagger.tag.FieldDataInvalidException
 import org.jaudiotagger.tag.FieldKey
+import org.jaudiotagger.tag.KeyNotFoundException
+import org.jaudiotagger.tag.Tag
 import org.jaudiotagger.tag.id3.ID3v24Tag
 import org.jaudiotagger.tag.images.Artwork
 import org.jaudiotagger.tag.images.StandardArtwork
@@ -62,7 +65,7 @@ object Tag {
             val albumArt = StandardArtwork.createArtworkFromFile(File("$mp3AlbumPath/${Config.coverArtFile}"))
             tag.addField(albumArt)
         } catch (e: FileNotFoundException) {
-            ImageScaler.logger.warning("Album art not found: $mp3AlbumPath/${Config.coverArtFile}")
+            ImageScaler.logger.warning("Could not find album art for tagging: $mp3AlbumPath/${Config.coverArtFile}")
         }
         tag.setField(FieldKey.ARTIST, flacTags.artist)
         tag.setField(FieldKey.ALBUM, flacTags.album)
@@ -83,16 +86,31 @@ object Tag {
         return artwork != null
     }
 
-    fun addAlbumArtField() {
+    private fun addAlbumArtField(mp3AlbumPath: String, tag: Tag) {
+        logger.warning("Fields initially in mp3 $mp3AlbumPath: ${tag.fieldCount}")
+        try {
+            val albumArt = StandardArtwork.createArtworkFromFile(File("$mp3AlbumPath/${Config.coverArtFile}"))
+            tag.addField(albumArt)
+            logger.warning("Fields finally in mp3 $mp3AlbumPath: ${tag.fieldCount}")
+        } catch (e: FieldDataInvalidException) {
+            ImageScaler.logger.warning("Could not find album art for tagging: $mp3AlbumPath/${Config.coverArtFile}")
+        }
 
     }
 
-    fun deleteAlbumArtField() {
-
+    private fun deleteAlbumArtField(tag: Tag) {
+        try {
+            tag.deleteArtworkField()
+        } catch (e: KeyNotFoundException) {
+            logger.warning("Album art tag not present.")
+        }
     }
 
-    fun updateAlbumArtField() {
-        deleteAlbumArtField()
-        addAlbumArtField()
+    fun updateAlbumArtField(mp3File: String, mp3AlbumPath: String) {
+        val f = AudioFileIO.read(File(mp3File))
+        f.tag = ID3v24Tag()
+        val tag = f.tag
+        deleteAlbumArtField(tag)
+        addAlbumArtField(mp3AlbumPath, tag)
     }
 }

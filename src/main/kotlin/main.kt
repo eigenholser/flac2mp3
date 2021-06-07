@@ -7,6 +7,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.FileTime
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.exists
 
 data class ConversionState(var switchAlbum: Boolean = false, var nextAlbum: String = "",
                            var prevMp3AlbumPath: Path? = null, var albumArtUpdate: Boolean = false)
@@ -39,13 +40,20 @@ fun main(args: Array<String>) {
             if (state.switchAlbum) {
                 state.switchAlbum = false
                 Files.createDirectories(it.mp3AlbumPathAbsolute)
-                // TODO: Does MP3 exist && FLAC album_art.png exist?
-                // TODO: If above is true, is FLAC album_art.png newer than MP3 file?
-                // TODO: If this is not null... we have album art. Then read mtime on MP3 file.
                 if (mp3FileExists(it)) {
                     val flag = Tag.albumArtExists(it.mp3FileAbsolute)
                     if (!flag) {
-                        println("******************** ALBUM ART DOES NOT EXIST ********************")
+                        println("******************** ALBUM ART EXISTS ********************")
+                        if (shouldWeUpdateAlbumArt(it)) {
+                            ImageScaler.scaleImage(
+                                it.flacAlbumPathAbsolute.toString(),
+                                it.mp3AlbumPathAbsolute.toString()
+                            )
+                            Tag.updateAlbumArtField(
+                                it.mp3FileAbsolute.toString(),
+                                it.mp3AlbumPathAbsolute.toString()
+                            )
+                        }
                     }
                 }
 
@@ -54,12 +62,14 @@ fun main(args: Array<String>) {
                     it.mp3AlbumPathAbsolute.toString()
                 )
             }
+            // TODO: Only do the stuff below if we're building new MP3
             if (!isTrackCurrent(it)) {
                 LameFlac2Mp3.flac2mp3(
                     it.flacFileAbsolute.toString(),
                     it.mp3FileAbsolute.toString(),
                     it.mp3AlbumPathAbsolute
                 )
+
                 val flacTags = Tag.readFlacTags(it.flacFileAbsolute.toString())
                 Tag.writeMp3Tags(it.mp3FileAbsolute.toString(), it.mp3AlbumPathAbsolute.toString(), flacTags)
             }
@@ -118,12 +128,22 @@ fun isAlbumArtCurrent(trackData: TrackData): Boolean {
     return true
 }
 
+@ExperimentalPathApi
 fun shouldWeProcessThisTrack(trackData: TrackData): Boolean {
     return (!isTrackCurrent(trackData) || shouldWeUpdateAlbumArt(trackData))
 }
 
+@ExperimentalPathApi
 fun shouldWeUpdateAlbumArt(trackData: TrackData): Boolean {
-    // do something
+    if (mp3FileExists(trackData) && trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists()) {
+        val albumArtMtime = Files.getAttribute(trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile), "lastModifiedTime") as FileTime
+        val mp3Mtime = Files.getAttribute(trackData.mp3FileAbsolute.toPath(), "lastModifiedTime") as FileTime
+        ImageScaler.logger.warning("Determination: " + (albumArtMtime.toMillis() > mp3Mtime.toMillis()))
+        return (albumArtMtime.toMillis() > mp3Mtime.toMillis())
+    } else if (!trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists()) {
+        ImageScaler.logger.warning(trackData.flacAlbumPathAbsolute.toPath().toString())
+        return false
+    }
     return true
 }
 
