@@ -1,7 +1,16 @@
 package com.eigenholser.flac2mp3
 
-import org.jetbrains.exposed.exceptions.ExposedSQLException
-import org.jetbrains.exposed.sql.ResultRow
+import com.eigenholser.flac2mp3.rules.NewAlbum
+import com.eigenholser.flac2mp3.states.SwitchAlbum
+import org.jeasy.rules.api.Fact
+import org.jeasy.rules.api.Facts
+import org.jeasy.rules.api.Rule
+import org.jeasy.rules.api.Rules
+import org.jeasy.rules.core.DefaultRulesEngine
+import org.jeasy.states.api.AbstractEvent
+import org.jeasy.states.api.State
+import org.jeasy.states.core.FiniteStateMachineBuilder
+import org.jeasy.states.core.TransitionBuilder
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -12,12 +21,54 @@ import kotlin.io.path.exists
 data class ConversionState(var switchAlbum: Boolean = false, var nextAlbum: String = "",
                            var prevMp3AlbumPath: Path? = null, var albumArtUpdate: Boolean = false)
 
+class NewAlbumEvent : AbstractEvent()
+class ExistingAlbumEvent : AbstractEvent()
+
+enum class AlbumState {
+    NEW_ALBUM,
+    EXISTING_ALBUM
+}
+
+enum class AlbumRule {
+    NEW_ALBUM
+}
+
+enum class AlbumFact {
+    ALBUM_STATE, CURRENT_ALBUM, NEXT_ALBUM
+}
+
 @ExperimentalPathApi
 fun main(args: Array<String>) {
     val db = DbSettings.db
     FlacDatabase.createDatabase()
 
     val state = ConversionState()
+    val newAlbum = State("newAlbum")
+    val existingAlbum = State("existingAlbum")
+    val states = mutableSetOf(newAlbum, existingAlbum)
+
+    val newAlbumTx = TransitionBuilder()
+        .name(AlbumState.NEW_ALBUM.toString())
+        .sourceState(existingAlbum)
+        .eventType(NewAlbumEvent::class.java)
+        .eventHandler(SwitchAlbum())
+        .targetState(newAlbum)
+        .build()
+
+    val existingAlbumTx = TransitionBuilder()
+        .name(AlbumState.EXISTING_ALBUM.toString())
+        .sourceState(newAlbum)
+        .eventType(ExistingAlbumEvent::class.java)
+        .eventHandler(SwitchAlbum())
+        .targetState(existingAlbum)
+        .build()
+
+    val albumStateMachine = FiniteStateMachineBuilder(states, existingAlbum)
+        .registerTransition(newAlbumTx)
+        .registerTransition(existingAlbumTx)
+        .build()
+
+    val rulesEngine = DefaultRulesEngine()
 
     File(Config.flacRoot)
         .walk()
@@ -31,13 +82,31 @@ fun main(args: Array<String>) {
         .filter (::shouldWeProcessThisTrack)
         .forEach {
             println(it)
-            if (!state.switchAlbum && it.currentAlbum != state.nextAlbum) {
+            println("Album State: ${albumStateMachine.currentState.name}")
+
+            val rules = Rules(NewAlbum())
+            val facts = Facts()
+            facts.add(Fact("AlbumState", albumStateMachine))
+            facts.add(Fact("currentAlbum", it.currentAlbum))
+            facts.add(Fact("nextAlbum", state.nextAlbum))
+            rulesEngine.fire(rules, facts)
+
+            if (isNewAlbum(rules, facts)) {
+                albumStateMachine.fire(NewAlbumEvent())
+            }
+
+            if (AlbumState.valueOf(albumStateMachine.currentState.name) == AlbumState.NEW_ALBUM) {
+                albumStateMachine.fire(ExistingAlbumEvent())
+                println("Album State: ${albumStateMachine.currentState.name}")
                 state.switchAlbum = true
                 state.nextAlbum = it.currentAlbum
                 deleteMp3CoverArt(state.prevMp3AlbumPath)
                 state.prevMp3AlbumPath = it.mp3AlbumPathAbsolute
             }
-            if (state.switchAlbum) {
+
+            if (AlbumState.valueOf(albumStateMachine.currentState.name) == AlbumState.EXISTING_ALBUM) {
+                albumStateMachine.fire(ExistingAlbumEvent())
+                println("Album State: ${albumStateMachine.currentState.name}")
                 state.switchAlbum = false
                 Files.createDirectories(it.mp3AlbumPathAbsolute)
                 if (mp3FileExists(it)) {
@@ -90,9 +159,12 @@ data class TrackData(
     val mp3FileAbsolute: File, val fsize: Long, val mtime: Long
 )
 
-fun convertRow(row: ResultRow): TrackData {
-    return convertRow(row[Flac.flacfile], row[Flac.fsize], row[Flac.mtime])
-}
+fun isNewAlbum(rules: Rules, facts: Facts) =
+    rules
+        .filter { isRulePresentInFacts(it, facts) }
+        .toList().isNotEmpty()
+
+fun isRulePresentInFacts(rule: Rule, facts: Facts) = facts.getFact(rule.name) != null
 
 fun convertRow(flacfile: String, fsize: Long, mtime: Long): TrackData {
     val flacFileAbsolute = File("${flacfile}")
