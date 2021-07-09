@@ -43,8 +43,8 @@ fun main(args: Array<String>) {
     FlacDatabase.createDatabase()
 
     val state = ConversionState()
-    val newAlbum = State("newAlbum")
-    val existingAlbum = State("existingAlbum")
+    val newAlbum = State(AlbumState.NEW_ALBUM.toString())
+    val existingAlbum = State(AlbumState.EXISTING_ALBUM.toString())
     val states = mutableSetOf(newAlbum, existingAlbum)
 
     val newAlbumTx = TransitionBuilder()
