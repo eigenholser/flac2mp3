@@ -86,9 +86,9 @@ fun main(args: Array<String>) {
 
             val rules = Rules(NewAlbum())
             val facts = Facts()
-            facts.add(Fact("AlbumState", albumStateMachine))
-            facts.add(Fact("currentAlbum", it.currentAlbum))
-            facts.add(Fact("nextAlbum", state.nextAlbum))
+            facts.add(Fact(AlbumFact.ALBUM_STATE.toString(), albumStateMachine))
+            facts.add(Fact(AlbumFact.CURRENT_ALBUM.toString(), it.currentAlbum))
+            facts.add(Fact(AlbumFact.NEXT_ALBUM.toString(), state.nextAlbum))
             rulesEngine.fire(rules, facts)
 
             if (isNewAlbum(rules, facts)) {
@@ -96,8 +96,8 @@ fun main(args: Array<String>) {
             }
 
             if (AlbumState.valueOf(albumStateMachine.currentState.name) == AlbumState.NEW_ALBUM) {
-                albumStateMachine.fire(ExistingAlbumEvent())
                 println("Album State: ${albumStateMachine.currentState.name}")
+                albumStateMachine.fire(ExistingAlbumEvent())
                 state.switchAlbum = true
                 state.nextAlbum = it.currentAlbum
                 deleteMp3CoverArt(state.prevMp3AlbumPath)
