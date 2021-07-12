@@ -60,12 +60,7 @@ object Tag {
         val f = AudioFileIO.read(File(mp3File))
         f.tag = ID3v24Tag()
         val tag = f.tag
-        // TODO: Put this try block in addAlbumArtField()
-        try {
-            addAlbumArtField(mp3AlbumPath, tag)
-        } catch (e: FileNotFoundException) {
-            ImageScaler.logger.warning("Could not find album art for tagging: $mp3AlbumPath/${Config.coverArtFile}")
-        }
+        addAlbumArtField(mp3AlbumPath, tag)
         tag.setField(FieldKey.ARTIST, flacTags.artist)
         tag.setField(FieldKey.ALBUM, flacTags.album)
         tag.setField(FieldKey.TITLE, flacTags.title)
