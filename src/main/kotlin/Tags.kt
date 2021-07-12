@@ -62,8 +62,7 @@ object Tag {
         val tag = f.tag
         // TODO: Put this try block in addAlbumArtField()
         try {
-            val albumArt = StandardArtwork.createArtworkFromFile(File("$mp3AlbumPath/${Config.coverArtFile}"))
-            tag.addField(albumArt)
+            addAlbumArtField(mp3AlbumPath, tag)
         } catch (e: FileNotFoundException) {
             ImageScaler.logger.warning("Could not find album art for tagging: $mp3AlbumPath/${Config.coverArtFile}")
         }
@@ -112,5 +111,6 @@ object Tag {
         val tag = f.tag
         deleteAlbumArtField(tag)
         addAlbumArtField(mp3AlbumPath, tag)
+        f.commit()
     }
 }
