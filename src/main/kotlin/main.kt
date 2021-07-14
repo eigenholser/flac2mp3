@@ -84,30 +84,30 @@ fun main(args: Array<String>) {
             println(it)
             println("Album State: ${albumStateMachine.currentState.name}")
 
-            val rules = Rules(NewAlbum())
+            val rules = Rules(NewAlbum(albumStateMachine))
             val facts = Facts()
             facts.add(Fact(AlbumFact.ALBUM_STATE.toString(), albumStateMachine))
             facts.add(Fact(AlbumFact.CURRENT_ALBUM.toString(), it.currentAlbum))
             facts.add(Fact(AlbumFact.NEXT_ALBUM.toString(), state.nextAlbum))
             rulesEngine.fire(rules, facts)
 
-            if (isNewAlbum(rules, facts)) {
-                albumStateMachine.fire(NewAlbumEvent())
-            }
+//            if (isNewAlbum(rules, facts)) {
+//                albumStateMachine.fire(NewAlbumEvent())
+//            }
 
             if (AlbumState.valueOf(albumStateMachine.currentState.name) == AlbumState.NEW_ALBUM) {
                 println("Album State: ${albumStateMachine.currentState.name}")
                 albumStateMachine.fire(ExistingAlbumEvent())
-                state.switchAlbum = true
+//                state.switchAlbum = true
                 state.nextAlbum = it.currentAlbum
                 deleteMp3CoverArt(state.prevMp3AlbumPath)
                 state.prevMp3AlbumPath = it.mp3AlbumPathAbsolute
             }
 
             if (AlbumState.valueOf(albumStateMachine.currentState.name) == AlbumState.EXISTING_ALBUM) {
-                albumStateMachine.fire(ExistingAlbumEvent())
+//                albumStateMachine.fire(ExistingAlbumEvent())
                 println("Album State: ${albumStateMachine.currentState.name}")
-                state.switchAlbum = false
+//                state.switchAlbum = false
                 Files.createDirectories(it.mp3AlbumPathAbsolute)
                 if (mp3FileExists(it)) {
                     val flag = Tag.albumArtExists(it.mp3FileAbsolute)
