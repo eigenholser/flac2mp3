@@ -10,6 +10,7 @@ import org.jaudiotagger.tag.images.Artwork
 import org.jaudiotagger.tag.images.StandardArtwork
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.util.logging.Logger
@@ -86,9 +87,10 @@ object Tag {
         try {
             val albumArt = StandardArtwork.createArtworkFromFile(File("$mp3AlbumPath/${Config.coverArtFile}"))
             tag.addField(albumArt)
-            tag.createField(albumArt)
             logger.warning("Fields finally in mp3 $mp3AlbumPath: ${tag.fieldCount}")
         } catch (e: FieldDataInvalidException) {
+            ImageScaler.logger.warning("Could not tag file with album art: $mp3AlbumPath/${Config.coverArtFile}")
+        } catch (e: IOException) {
             ImageScaler.logger.warning("Could not find album art for tagging: $mp3AlbumPath/${Config.coverArtFile}")
         }
 

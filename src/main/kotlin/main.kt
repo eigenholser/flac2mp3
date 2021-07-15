@@ -102,6 +102,11 @@ fun main(args: Array<String>) {
                 state.nextAlbum = it.currentAlbum
                 deleteMp3CoverArt(state.prevMp3AlbumPath)
                 state.prevMp3AlbumPath = it.mp3AlbumPathAbsolute
+
+                //TODO:Decide whether or not to scale album art
+                //1. MP3 file not found: Scale art
+                //2. MP3 file found: No art tagged, art found in flac
+                //3. MP3 file found: Art tagged, art found in flac, found art is newer than MP3 file
             }
 
             if (AlbumState.valueOf(albumStateMachine.currentState.name) == AlbumState.EXISTING_ALBUM) {
@@ -110,10 +115,11 @@ fun main(args: Array<String>) {
 //                state.switchAlbum = false
                 Files.createDirectories(it.mp3AlbumPathAbsolute)
                 if (mp3FileExists(it)) {
+                    println("******************** MP3 File EXISTS ********************")
                     val flag = Tag.albumArtExists(it.mp3FileAbsolute)
                     if (!flag) {
                         println("******************** ALBUM ART EXISTS ********************")
-                        if (shouldWeUpdateAlbumArt(it)) {
+                        if (shouldWeUpdateAlbumArtOnTaggedTracks(it)) {
                             ImageScaler.scaleImage(
                                 it.flacAlbumPathAbsolute.toString(),
                                 it.mp3AlbumPathAbsolute.toString()
@@ -196,22 +202,32 @@ fun mp3FileExists(trackData: TrackData): Boolean {
 }
 
 fun isAlbumArtCurrent(trackData: TrackData): Boolean {
-    // TODO: check state
+    if (Tag.albumArtExists(trackData.mp3FileAbsolute)) {
+        val albumArtMtime = Files.getAttribute(trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile), "lastModifiedTime") as FileTime
+        val mp3Mtime = Files.getAttribute(trackData.mp3FileAbsolute.toPath(), "lastModifiedTime") as FileTime
+        return (albumArtMtime.toMillis() > mp3Mtime.toMillis())
+    }
     return true
 }
 
 @ExperimentalPathApi
 fun shouldWeProcessThisTrack(trackData: TrackData): Boolean {
-    return (!isTrackCurrent(trackData) || shouldWeUpdateAlbumArt(trackData))
+    return (!isTrackCurrent(trackData) || shouldWeUpdateAlbumArtOnTaggedTracks(trackData))
 }
 
 @ExperimentalPathApi
-fun shouldWeUpdateAlbumArt(trackData: TrackData): Boolean {
-    if (mp3FileExists(trackData) && trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists()) {
-        val albumArtMtime = Files.getAttribute(trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile), "lastModifiedTime") as FileTime
-        val mp3Mtime = Files.getAttribute(trackData.mp3FileAbsolute.toPath(), "lastModifiedTime") as FileTime
-        ImageScaler.logger.warning("Determination: " + (albumArtMtime.toMillis() > mp3Mtime.toMillis()))
-        return (albumArtMtime.toMillis() > mp3Mtime.toMillis())
+fun shouldWeUpdateAlbumArtOnTaggedTracks(trackData: TrackData): Boolean {
+    //3. MP3 file found: Art tagged, art found in flac, found art is newer than MP3 file
+    if (mp3FileExists(trackData) && trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists() && Tag.albumArtExists(trackData.mp3FileAbsolute)) {
+        println("MP3 file found with an existing art tag. Comparing modification dates for track and album_art.png.")
+        ImageScaler.logger.warning("Determination: " + isAlbumArtCurrent(trackData))
+        return isAlbumArtCurrent(trackData)
+    } else if (mp3FileExists(trackData) && trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists() && !Tag.albumArtExists(trackData.mp3FileAbsolute)) {
+        println("MP3 file found without existing art tag and album_art.png exists.")
+        return true
+    } else if (!mp3FileExists(trackData) && trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists()) {
+        println("MP3 file not found and album_art.png exists.")
+        return true
     } else if (!trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists()) {
         ImageScaler.logger.warning(trackData.flacAlbumPathAbsolute.toPath().toString())
         return false
