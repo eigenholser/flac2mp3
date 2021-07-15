@@ -102,40 +102,36 @@ fun main(args: Array<String>) {
                 state.nextAlbum = it.currentAlbum
                 deleteMp3CoverArt(state.prevMp3AlbumPath)
                 state.prevMp3AlbumPath = it.mp3AlbumPathAbsolute
+                Files.createDirectories(it.mp3AlbumPathAbsolute)
 
                 //TODO:Decide whether or not to scale album art
                 //1. MP3 file not found: Scale art
                 //2. MP3 file found: No art tagged, art found in flac
                 //3. MP3 file found: Art tagged, art found in flac, found art is newer than MP3 file
+                if (shouldWeUpdateAlbumArt(it)) {
+                    ImageScaler.scaleImage(
+                        it.flacAlbumPathAbsolute.toString(),
+                        it.mp3AlbumPathAbsolute.toString()
+                    )
+                }
             }
 
             if (AlbumState.valueOf(albumStateMachine.currentState.name) == AlbumState.EXISTING_ALBUM) {
 //                albumStateMachine.fire(ExistingAlbumEvent())
                 println("Album State: ${albumStateMachine.currentState.name}")
 //                state.switchAlbum = false
-                Files.createDirectories(it.mp3AlbumPathAbsolute)
                 if (mp3FileExists(it)) {
                     println("******************** MP3 File EXISTS ********************")
-                    val flag = Tag.albumArtExists(it.mp3FileAbsolute)
-                    if (!flag) {
-                        println("******************** ALBUM ART EXISTS ********************")
-                        if (shouldWeUpdateAlbumArtOnTaggedTracks(it)) {
-                            ImageScaler.scaleImage(
-                                it.flacAlbumPathAbsolute.toString(),
-                                it.mp3AlbumPathAbsolute.toString()
-                            )
+//                    if (Tag.albumArtExists(it.mp3FileAbsolute)) {
+//                        println("******************** ALBUM ART EXISTS ********************")
+                        if (shouldWeUpdateAlbumArt(it)) {
                             Tag.updateAlbumArtField(
                                 it.mp3FileAbsolute.toString(),
                                 it.mp3AlbumPathAbsolute.toString()
                             )
                         }
-                    }
+//                    }
                 }
-
-                ImageScaler.scaleImage(
-                    it.flacAlbumPathAbsolute.toString(),
-                    it.mp3AlbumPathAbsolute.toString()
-                )
             }
             // TODO: Only do the stuff below if we're building new MP3
             if (!isTrackCurrent(it)) {
@@ -212,11 +208,11 @@ fun isAlbumArtCurrent(trackData: TrackData): Boolean {
 
 @ExperimentalPathApi
 fun shouldWeProcessThisTrack(trackData: TrackData): Boolean {
-    return (!isTrackCurrent(trackData) || shouldWeUpdateAlbumArtOnTaggedTracks(trackData))
+    return (!isTrackCurrent(trackData) || shouldWeUpdateAlbumArt(trackData))
 }
 
 @ExperimentalPathApi
-fun shouldWeUpdateAlbumArtOnTaggedTracks(trackData: TrackData): Boolean {
+fun shouldWeUpdateAlbumArt(trackData: TrackData): Boolean {
     //3. MP3 file found: Art tagged, art found in flac, found art is newer than MP3 file
     if (mp3FileExists(trackData) && trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists() && Tag.albumArtExists(trackData.mp3FileAbsolute)) {
         println("MP3 file found with an existing art tag. Comparing modification dates for track and album_art.png.")
