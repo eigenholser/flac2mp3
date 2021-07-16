@@ -15,6 +15,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.FileTime
+import java.util.logging.Logger
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.exists
 
@@ -36,6 +37,8 @@ enum class AlbumRule {
 enum class AlbumFact {
     ALBUM_STATE, CURRENT_ALBUM, NEXT_ALBUM
 }
+
+val logger: Logger = Logger.getLogger("main")
 
 @ExperimentalPathApi
 fun main(args: Array<String>) {
@@ -188,19 +191,16 @@ fun shouldWeProcessThisTrack(trackData: TrackData): Boolean {
 @ExperimentalPathApi
 fun shouldWeUpdateAlbumArt(trackData: TrackData): Boolean =
     if (mp3FileExists(trackData) && albumArtPNGExists(trackData) && Tag.albumArtTagExists(trackData.mp3FileAbsolute)) {
-        ImageScaler.logger.warning("Determination: " + isAlbumArtCurrent(trackData))
+        logger.warning("Determination: " + isAlbumArtCurrent(trackData))
         isAlbumArtCurrent(trackData)
     } else if (mp3FileExists(trackData) && albumArtPNGExists(trackData) && !Tag.albumArtTagExists(trackData.mp3FileAbsolute)) {
         true
     } else if (!mp3FileExists(trackData) && albumArtPNGExists(trackData)) {
         true
     } else if (!albumArtPNGExists(trackData)) {
-        ImageScaler.logger.warning(trackData.flacAlbumPathAbsolute.toPath().toString())
+        logger.warning(trackData.flacAlbumPathAbsolute.toPath().toString())
         false
     } else true
-
-
-
 
 fun deleteMp3CoverArt(mp3AlbumPathAbsolute: Path?): Boolean {
     if (mp3AlbumPathAbsolute != null) {
