@@ -165,9 +165,11 @@ fun isTrackCurrent(trackData: TrackData): Boolean {
 fun mp3FileExists(trackData: TrackData): Boolean {
     return trackData.mp3FileAbsolute.exists()
 }
+@ExperimentalPathApi
+fun albumArtPNGExists(trackData: TrackData): Boolean = trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists()
 
 fun isAlbumArtCurrent(trackData: TrackData): Boolean {
-    if (Tag.albumArtExists(trackData.mp3FileAbsolute)) {
+    if (Tag.albumArtTagExists(trackData.mp3FileAbsolute)) {
         val albumArtMtime = Files.getAttribute(trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile), "lastModifiedTime") as FileTime
         val mp3Mtime = Files.getAttribute(trackData.mp3FileAbsolute.toPath(), "lastModifiedTime") as FileTime
         return (albumArtMtime.toMillis() > mp3Mtime.toMillis())
@@ -180,25 +182,25 @@ fun shouldWeProcessThisTrack(trackData: TrackData): Boolean {
     return (!isTrackCurrent(trackData) || shouldWeUpdateAlbumArt(trackData))
 }
 
+//1. MP3 file not found: Scale art
+//2. MP3 file found: No art tagged, art found in flac
+//3. MP3 file found: Art tagged, art found in flac, found art is newer than MP3 file
 @ExperimentalPathApi
-fun shouldWeUpdateAlbumArt(trackData: TrackData): Boolean {
-    //TODO:Decide whether or not to scale album art
-    //1. MP3 file not found: Scale art
-    //2. MP3 file found: No art tagged, art found in flac
-    //3. MP3 file found: Art tagged, art found in flac, found art is newer than MP3 file
-    if (mp3FileExists(trackData) && trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists() && Tag.albumArtExists(trackData.mp3FileAbsolute)) {
+fun shouldWeUpdateAlbumArt(trackData: TrackData): Boolean =
+    if (mp3FileExists(trackData) && albumArtPNGExists(trackData) && Tag.albumArtTagExists(trackData.mp3FileAbsolute)) {
         ImageScaler.logger.warning("Determination: " + isAlbumArtCurrent(trackData))
-        return isAlbumArtCurrent(trackData)
-    } else if (mp3FileExists(trackData) && trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists() && !Tag.albumArtExists(trackData.mp3FileAbsolute)) {
-        return true
-    } else if (!mp3FileExists(trackData) && trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists()) {
-        return true
-    } else if (!trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists()) {
+        isAlbumArtCurrent(trackData)
+    } else if (mp3FileExists(trackData) && albumArtPNGExists(trackData) && !Tag.albumArtTagExists(trackData.mp3FileAbsolute)) {
+        true
+    } else if (!mp3FileExists(trackData) && albumArtPNGExists(trackData)) {
+        true
+    } else if (!albumArtPNGExists(trackData)) {
         ImageScaler.logger.warning(trackData.flacAlbumPathAbsolute.toPath().toString())
-        return false
-    }
-    return true
-}
+        false
+    } else true
+
+
+
 
 fun deleteMp3CoverArt(mp3AlbumPathAbsolute: Path?): Boolean {
     if (mp3AlbumPathAbsolute != null) {

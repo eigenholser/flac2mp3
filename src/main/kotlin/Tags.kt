@@ -74,7 +74,7 @@ object Tag {
         f.commit()
     }
 
-    fun albumArtExists(mp3File: File): Boolean {
+    fun albumArtTagExists(mp3File: File): Boolean {
         val f = AudioFileIO.read(mp3File)
         val tag = f.tag // TODO: Is this null if the MP3 has not been tagged? try/catch?
         // If this is null there is no artwork?? Prove this hypothesis.
