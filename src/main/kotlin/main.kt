@@ -19,12 +19,14 @@ import java.util.logging.Logger
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.exists
 
-data class ConversionState(/* var switchAlbum: Boolean = false, */var nextAlbum: String = "",
-                           var prevMp3AlbumPath: Path? = null/*, var albumArtUpdate: Boolean = false*/,
-                           var tagAlbumArt: Boolean = false)
+data class ConversionState(var nextAlbum: String = "", var prevMp3AlbumPath: Path? = null)
 
-class NewAlbumEvent : AbstractEvent("NewAlbumEvent")
-class ExistingAlbumEvent : AbstractEvent("ExistingAlbumEvent")
+enum class AlbumEvent {
+    NEW_ALBUM_EVENT, EXISTING_ALBUM_EVENT
+}
+
+class NewAlbumEvent : AbstractEvent(AlbumEvent.NEW_ALBUM_EVENT.toString())
+class ExistingAlbumEvent : AbstractEvent(AlbumEvent.EXISTING_ALBUM_EVENT.toString())
 
 enum class AlbumState {
     NEW_ALBUM,
@@ -38,7 +40,6 @@ enum class AlbumRule {
 enum class AlbumArtRules {
     NEW_MP3_ART_EXISTS,
     MP3_TAGGED_ART_UPDATED
-
 }
 
 enum class AlbumArtFacts {
