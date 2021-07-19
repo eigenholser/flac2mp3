@@ -1,16 +1,13 @@
 package com.eigenholser.flac2mp3
 
-import com.eigenholser.flac2mp3.rules.ArtNewMp3
-import com.eigenholser.flac2mp3.rules.ArtUpdateIDv3
-import com.eigenholser.flac2mp3.rules.NewAlbum
-import com.eigenholser.flac2mp3.states.SwitchAlbum
+import com.eigenholser.flac2mp3.rules.*
+import com.eigenholser.flac2mp3.states.AlbumState
+import com.eigenholser.flac2mp3.states.AlbumState.albumStateMachine
+import com.eigenholser.flac2mp3.states.AlbumState.state
+import com.eigenholser.flac2mp3.states.AlbumStates
+import com.eigenholser.flac2mp3.states.ExistingAlbumEvent
 import org.jeasy.rules.api.*
 import org.jeasy.rules.core.DefaultRulesEngine
-import org.jeasy.states.api.AbstractEvent
-import org.jeasy.states.api.FiniteStateMachine
-import org.jeasy.states.api.State
-import org.jeasy.states.core.FiniteStateMachineBuilder
-import org.jeasy.states.core.TransitionBuilder
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -19,69 +16,13 @@ import java.util.logging.Logger
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.exists
 
-data class ConversionState(var nextAlbum: String = "", var prevMp3AlbumPath: Path? = null)
-
-enum class AlbumEvent {
-    NEW_ALBUM_EVENT, EXISTING_ALBUM_EVENT
-}
-
-class NewAlbumEvent : AbstractEvent(AlbumEvent.NEW_ALBUM_EVENT.toString())
-class ExistingAlbumEvent : AbstractEvent(AlbumEvent.EXISTING_ALBUM_EVENT.toString())
-
-enum class AlbumState {
-    NEW_ALBUM,
-    EXISTING_ALBUM
-}
-
-enum class AlbumRule {
-    NEW_ALBUM
-}
-
-enum class AlbumArtRules {
-    NEW_MP3_ART_EXISTS,
-    MP3_TAGGED_ART_UPDATED
-}
-
-enum class AlbumArtFacts {
-    TRACK_DATA, ALBUM_STATE
-}
-enum class AlbumFact {
-    ALBUM_STATE, CURRENT_ALBUM, NEXT_ALBUM
-}
-
 val logger: Logger = Logger.getLogger("main")
 
 @ExperimentalPathApi
 fun main(args: Array<String>) {
     /* Leaving the DB stuff for now. May return to it later. */
-//    val db = DbSettings.db
-//    FlacDatabase.createDatabase()
-
-    val state = ConversionState()
-    val newAlbum = State(AlbumState.NEW_ALBUM.toString())
-    val existingAlbum = State(AlbumState.EXISTING_ALBUM.toString())
-    val states = mutableSetOf(newAlbum, existingAlbum)
-
-    val newAlbumTx = TransitionBuilder()
-        .name(AlbumState.NEW_ALBUM.toString())
-        .sourceState(existingAlbum)
-        .eventType(NewAlbumEvent::class.java)
-        .eventHandler(SwitchAlbum())
-        .targetState(newAlbum)
-        .build()
-
-    val existingAlbumTx = TransitionBuilder()
-        .name(AlbumState.EXISTING_ALBUM.toString())
-        .sourceState(newAlbum)
-        .eventType(ExistingAlbumEvent::class.java)
-        .eventHandler(SwitchAlbum())
-        .targetState(existingAlbum)
-        .build()
-
-    val albumStateMachine = FiniteStateMachineBuilder(states, existingAlbum)
-        .registerTransition(newAlbumTx)
-        .registerTransition(existingAlbumTx)
-        .build()
+    // val db = DbSettings.db
+    // FlacDatabase.createDatabase()
 
     val rulesEngine = DefaultRulesEngine()
 
@@ -111,8 +52,8 @@ fun main(args: Array<String>) {
             val parameters = RulesEngineParameters()
                 .skipOnFirstAppliedRule(true)
 
-            when (AlbumState.valueOf(albumStateMachine.currentState.name)) {
-                AlbumState.NEW_ALBUM -> {
+            when (AlbumStates.valueOf(albumStateMachine.currentState.name)) {
+                AlbumStates.NEW_ALBUM -> {
                     deleteMp3CoverArt(state.prevMp3AlbumPath)
 
                     state.nextAlbum = it.currentAlbum
@@ -125,7 +66,7 @@ fun main(args: Array<String>) {
 
                     albumStateMachine.fire(ExistingAlbumEvent())
                 }
-                AlbumState.EXISTING_ALBUM -> {
+                AlbumStates.EXISTING_ALBUM -> {
                     val albumArtRulesEngine = DefaultRulesEngine(parameters)
                     val albumArtRules = Rules(ArtNewMp3(), ArtUpdateIDv3())
                     albumArtRulesEngine.fire(albumArtRules, albumArtFacts)

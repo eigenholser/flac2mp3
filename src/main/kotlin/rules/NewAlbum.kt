@@ -2,8 +2,8 @@ package com.eigenholser.flac2mp3.rules
 
 import com.eigenholser.flac2mp3.AlbumFact
 import com.eigenholser.flac2mp3.AlbumRule
-import com.eigenholser.flac2mp3.AlbumState
-import com.eigenholser.flac2mp3.NewAlbumEvent
+import com.eigenholser.flac2mp3.states.AlbumStates
+import com.eigenholser.flac2mp3.states.NewAlbumEvent
 import org.jeasy.rules.api.Facts
 import org.jeasy.states.api.FiniteStateMachine
 
@@ -25,6 +25,6 @@ class NewAlbum(private val albumStateMachine: FiniteStateMachine): ConversionRul
         val currentAlbum = facts.get<String>(AlbumFact.CURRENT_ALBUM.toString())
         val nextAlbum = facts.get<String>(AlbumFact.NEXT_ALBUM.toString())
 
-        return AlbumState.valueOf(albumState.currentState.name) == AlbumState.EXISTING_ALBUM && currentAlbum != nextAlbum
+        return AlbumStates.valueOf(albumState.currentState.name) == AlbumStates.EXISTING_ALBUM && currentAlbum != nextAlbum
     }
 }

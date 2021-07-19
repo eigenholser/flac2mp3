@@ -1,7 +1,10 @@
 package com.eigenholser.flac2mp3.rules
 
-import com.eigenholser.flac2mp3.*
-import org.jeasy.rules.api.Fact
+import com.eigenholser.flac2mp3.AlbumArtFacts
+import com.eigenholser.flac2mp3.ImageScaler
+import com.eigenholser.flac2mp3.Tag
+import com.eigenholser.flac2mp3.TrackData
+import com.eigenholser.flac2mp3.states.AlbumStates
 import org.jeasy.rules.api.Facts
 import org.jeasy.rules.api.Rule
 import org.jeasy.states.api.FiniteStateMachine
@@ -11,14 +14,14 @@ interface AlbumArtRule: Rule {
 
     override fun execute(facts: Facts) {
         val trackData = facts.get<TrackData>(AlbumArtFacts.TRACK_DATA.toString())
-        when (AlbumState.valueOf(facts.get<FiniteStateMachine>(AlbumArtFacts.ALBUM_STATE.toString()).currentState.name)) {
-            AlbumState.NEW_ALBUM -> {
+        when (AlbumStates.valueOf(facts.get<FiniteStateMachine>(AlbumArtFacts.ALBUM_STATE.toString()).currentState.name)) {
+            AlbumStates.NEW_ALBUM -> {
                 ImageScaler.scaleImage(
                     trackData.flacAlbumPathAbsolute.toString(),
                     trackData.mp3AlbumPathAbsolute.toString()
                 )
             }
-            AlbumState.EXISTING_ALBUM -> {
+            AlbumStates.EXISTING_ALBUM -> {
                 Tag.updateAlbumArtField(
                     trackData.mp3FileAbsolute.toString(),
                     trackData.mp3AlbumPathAbsolute.toString()
