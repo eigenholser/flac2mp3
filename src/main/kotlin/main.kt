@@ -1,13 +1,13 @@
 package com.eigenholser.flac2mp3
 
+import com.eigenholser.flac2mp3.rules.ArtNewMp3
+import com.eigenholser.flac2mp3.rules.ArtUpdateIDv3
 import com.eigenholser.flac2mp3.rules.NewAlbum
 import com.eigenholser.flac2mp3.states.SwitchAlbum
-import org.jeasy.rules.api.Fact
-import org.jeasy.rules.api.Facts
-import org.jeasy.rules.api.Rule
-import org.jeasy.rules.api.Rules
+import org.jeasy.rules.api.*
 import org.jeasy.rules.core.DefaultRulesEngine
 import org.jeasy.states.api.AbstractEvent
+import org.jeasy.states.api.FiniteStateMachine
 import org.jeasy.states.api.State
 import org.jeasy.states.core.FiniteStateMachineBuilder
 import org.jeasy.states.core.TransitionBuilder
@@ -20,10 +20,11 @@ import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.exists
 
 data class ConversionState(/* var switchAlbum: Boolean = false, */var nextAlbum: String = "",
-                           var prevMp3AlbumPath: Path? = null/*, var albumArtUpdate: Boolean = false*/)
+                           var prevMp3AlbumPath: Path? = null/*, var albumArtUpdate: Boolean = false*/,
+                           var tagAlbumArt: Boolean = false)
 
-class NewAlbumEvent : AbstractEvent()
-class ExistingAlbumEvent : AbstractEvent()
+class NewAlbumEvent : AbstractEvent("NewAlbumEvent")
+class ExistingAlbumEvent : AbstractEvent("ExistingAlbumEvent")
 
 enum class AlbumState {
     NEW_ALBUM,
@@ -34,6 +35,15 @@ enum class AlbumRule {
     NEW_ALBUM
 }
 
+enum class AlbumArtRules {
+    NEW_MP3_ART_EXISTS,
+    MP3_TAGGED_ART_UPDATED
+
+}
+
+enum class AlbumArtFacts {
+    TRACK_DATA, ALBUM_STATE
+}
 enum class AlbumFact {
     ALBUM_STATE, CURRENT_ALBUM, NEXT_ALBUM
 }
@@ -42,8 +52,9 @@ val logger: Logger = Logger.getLogger("main")
 
 @ExperimentalPathApi
 fun main(args: Array<String>) {
-    val db = DbSettings.db
-    FlacDatabase.createDatabase()
+    /* Leaving the DB stuff for now. May return to it later. */
+//    val db = DbSettings.db
+//    FlacDatabase.createDatabase()
 
     val state = ConversionState()
     val newAlbum = State(AlbumState.NEW_ALBUM.toString())
@@ -84,7 +95,7 @@ fun main(args: Array<String>) {
         }
         .filter (::shouldWeProcessThisTrack)
         .forEach {
-            println(it)
+            logger.info(it.toString())
 
             val rules = Rules(NewAlbum(albumStateMachine))
             val facts = Facts()
@@ -93,40 +104,41 @@ fun main(args: Array<String>) {
             facts.add(Fact(AlbumFact.NEXT_ALBUM.toString(), state.nextAlbum))
             rulesEngine.fire(rules, facts)
 
-            if (AlbumState.valueOf(albumStateMachine.currentState.name) == AlbumState.NEW_ALBUM) {
-                albumStateMachine.fire(ExistingAlbumEvent())
-                state.nextAlbum = it.currentAlbum
-                deleteMp3CoverArt(state.prevMp3AlbumPath)
-                state.prevMp3AlbumPath = it.mp3AlbumPathAbsolute
-                Files.createDirectories(it.mp3AlbumPathAbsolute)
+            val albumArtFacts = Facts()
+            albumArtFacts.add(Fact(AlbumArtFacts.TRACK_DATA.toString(), it))
+            albumArtFacts.add(Fact(AlbumArtFacts.ALBUM_STATE.toString(), albumStateMachine))
+            val parameters = RulesEngineParameters()
+                .skipOnFirstAppliedRule(true)
 
-                if (shouldWeUpdateAlbumArt(it)) {
-                    ImageScaler.scaleImage(
-                        it.flacAlbumPathAbsolute.toString(),
-                        it.mp3AlbumPathAbsolute.toString()
-                    )
+            when (AlbumState.valueOf(albumStateMachine.currentState.name)) {
+                AlbumState.NEW_ALBUM -> {
+                    deleteMp3CoverArt(state.prevMp3AlbumPath)
+
+                    state.nextAlbum = it.currentAlbum
+                    state.prevMp3AlbumPath = it.mp3AlbumPathAbsolute
+                    Files.createDirectories(it.mp3AlbumPathAbsolute)
+
+                    val albumArtRulesEngine = DefaultRulesEngine(parameters)
+                    val albumArtRules = Rules(ArtNewMp3(), ArtUpdateIDv3())
+                    albumArtRulesEngine.fire(albumArtRules, albumArtFacts)
+
+                    albumStateMachine.fire(ExistingAlbumEvent())
                 }
-            }
+                AlbumState.EXISTING_ALBUM -> {
+                    val albumArtRulesEngine = DefaultRulesEngine(parameters)
+                    val albumArtRules = Rules(ArtNewMp3(), ArtUpdateIDv3())
+                    albumArtRulesEngine.fire(albumArtRules, albumArtFacts)
 
-            if (AlbumState.valueOf(albumStateMachine.currentState.name) == AlbumState.EXISTING_ALBUM) {
-                if (mp3FileExists(it)) {
-                    if (shouldWeUpdateAlbumArt(it)) {
-                        Tag.updateAlbumArtField(
+                    if (!isTrackCurrent(it)) {
+                        LameFlac2Mp3.flac2mp3(
+                            it.flacFileAbsolute.toString(),
                             it.mp3FileAbsolute.toString(),
-                            it.mp3AlbumPathAbsolute.toString()
+                            it.mp3AlbumPathAbsolute
                         )
+
+                        val flacTags = Tag.readFlacTags(it.flacFileAbsolute.toString())
+                        Tag.writeMp3Tags(it.mp3FileAbsolute.toString(), it.mp3AlbumPathAbsolute.toString(), flacTags)
                     }
-                }
-
-                if (!isTrackCurrent(it)) {
-                    LameFlac2Mp3.flac2mp3(
-                        it.flacFileAbsolute.toString(),
-                        it.mp3FileAbsolute.toString(),
-                        it.mp3AlbumPathAbsolute
-                    )
-
-                    val flacTags = Tag.readFlacTags(it.flacFileAbsolute.toString())
-                    Tag.writeMp3Tags(it.mp3FileAbsolute.toString(), it.mp3AlbumPathAbsolute.toString(), flacTags)
                 }
             }
         }
@@ -171,36 +183,21 @@ fun mp3FileExists(trackData: TrackData): Boolean {
 @ExperimentalPathApi
 fun albumArtPNGExists(trackData: TrackData): Boolean = trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists()
 
-fun isAlbumArtCurrent(trackData: TrackData): Boolean {
-    if (Tag.albumArtTagExists(trackData.mp3FileAbsolute)) {
-        val albumArtMtime = Files.getAttribute(trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile), "lastModifiedTime") as FileTime
+@OptIn(ExperimentalPathApi::class)
+fun isAlbumArtUpdated(trackData: TrackData): Boolean =
+    if (mp3FileExists(trackData) && albumArtPNGExists(trackData)) {
+        val albumArtMtime = Files.getAttribute(
+            trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile), "lastModifiedTime"
+        ) as FileTime
         val mp3Mtime = Files.getAttribute(trackData.mp3FileAbsolute.toPath(), "lastModifiedTime") as FileTime
-        return (albumArtMtime.toMillis() > mp3Mtime.toMillis())
-    }
-    return true
-}
+        (Tag.albumArtTagExists(trackData.mp3FileAbsolute) && albumArtMtime.toMillis() > mp3Mtime.toMillis())
+                || !Tag.albumArtTagExists(trackData.mp3FileAbsolute)
+    } else false
 
 @ExperimentalPathApi
 fun shouldWeProcessThisTrack(trackData: TrackData): Boolean {
-    return (!isTrackCurrent(trackData) || shouldWeUpdateAlbumArt(trackData))
+    return (!isTrackCurrent(trackData) || isAlbumArtUpdated(trackData))
 }
-
-//1. MP3 file not found: Scale art
-//2. MP3 file found: No art tagged, art found in flac
-//3. MP3 file found: Art tagged, art found in flac, found art is newer than MP3 file
-@ExperimentalPathApi
-fun shouldWeUpdateAlbumArt(trackData: TrackData): Boolean =
-    if (mp3FileExists(trackData) && albumArtPNGExists(trackData) && Tag.albumArtTagExists(trackData.mp3FileAbsolute)) {
-        logger.warning("Determination: " + isAlbumArtCurrent(trackData))
-        isAlbumArtCurrent(trackData)
-    } else if (mp3FileExists(trackData) && albumArtPNGExists(trackData) && !Tag.albumArtTagExists(trackData.mp3FileAbsolute)) {
-        true
-    } else if (!mp3FileExists(trackData) && albumArtPNGExists(trackData)) {
-        true
-    } else if (!albumArtPNGExists(trackData)) {
-        logger.warning(trackData.flacAlbumPathAbsolute.toPath().toString())
-        false
-    } else true
 
 fun deleteMp3CoverArt(mp3AlbumPathAbsolute: Path?): Boolean {
     if (mp3AlbumPathAbsolute != null) {

@@ -6,10 +6,8 @@ import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.KeyNotFoundException
 import org.jaudiotagger.tag.Tag
 import org.jaudiotagger.tag.id3.ID3v24Tag
-import org.jaudiotagger.tag.images.Artwork
 import org.jaudiotagger.tag.images.StandardArtwork
 import java.io.File
-import java.io.FileNotFoundException
 import java.io.IOException
 import java.math.BigInteger
 import java.security.MessageDigest
@@ -76,9 +74,7 @@ object Tag {
 
     fun albumArtTagExists(mp3File: File): Boolean {
         val f = AudioFileIO.read(mp3File)
-        val tag = f.tag // TODO: Is this null if the MP3 has not been tagged? try/catch?
-        // If this is null there is no artwork?? Prove this hypothesis.
-        val artwork = tag.firstArtwork
+        val artwork = f.tag?.firstArtwork
         return artwork != null
     }
 
@@ -93,7 +89,6 @@ object Tag {
         } catch (e: IOException) {
             ImageScaler.logger.warning("Could not find album art for tagging: $mp3AlbumPath/${Config.coverArtFile}")
         }
-
     }
 
     private fun deleteAlbumArtField(tag: Tag) {
