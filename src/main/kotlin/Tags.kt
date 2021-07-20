@@ -1,14 +1,11 @@
 package com.eigenholser.flac2mp3
 
 import org.jaudiotagger.audio.AudioFileIO
-import org.jaudiotagger.tag.FieldDataInvalidException
 import org.jaudiotagger.tag.FieldKey
-import org.jaudiotagger.tag.KeyNotFoundException
-import org.jaudiotagger.tag.Tag
-import org.jaudiotagger.tag.id3.ID3v24Tag
+import org.jaudiotagger.tag.id3.ID3v23Tag
 import org.jaudiotagger.tag.images.StandardArtwork
 import java.io.File
-import java.io.IOException
+import java.io.FileNotFoundException
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.util.logging.Logger
@@ -57,56 +54,22 @@ object Tag {
 
     fun writeMp3Tags(mp3File: String, mp3AlbumPath: String, flacTags: FlacTags): Unit {
         val f = AudioFileIO.read(File(mp3File))
-        f.tag = ID3v24Tag()
+        f.tag = ID3v23Tag()
         val tag = f.tag
-        addAlbumArtField(mp3AlbumPath, tag)
+        try {
+            val albumArt = StandardArtwork.createArtworkFromFile(File("$mp3AlbumPath/${Config.coverArtFile}"))
+            tag.addField(albumArt)
+        } catch (e: FileNotFoundException) {
+            ImageScaler.logger.warning("Album art not found: $mp3AlbumPath/${Config.coverArtFile}")
+        }
         tag.setField(FieldKey.ARTIST, flacTags.artist)
         tag.setField(FieldKey.ALBUM, flacTags.album)
         tag.setField(FieldKey.TITLE, flacTags.title)
         tag.setField(FieldKey.YEAR, flacTags.year)
         tag.setField(FieldKey.GENRE, flacTags.genre)
         tag.setField(FieldKey.TRACK, flacTags.track)
-        logger.warning("Fields finally in mp3 $mp3AlbumPath: ${tag.fieldCount}")
         // TODO: How does this work?
 //        tag.createField(FieldKey.valueOf("CDDB"), flacTags.cddb)
-        f.commit()
-    }
-
-    fun albumArtTagExists(mp3File: File): Boolean {
-        val f = AudioFileIO.read(mp3File)
-        val artwork = f.tag?.firstArtwork
-        return artwork != null
-    }
-
-    private fun addAlbumArtField(mp3AlbumPath: String, tag: Tag) {
-        logger.warning("Fields initially in mp3 $mp3AlbumPath: ${tag.fieldCount}")
-        try {
-            val albumArt = StandardArtwork.createArtworkFromFile(File("$mp3AlbumPath/${Config.coverArtFile}"))
-            tag.addField(albumArt)
-            logger.warning("Fields finally in mp3 $mp3AlbumPath: ${tag.fieldCount}")
-        } catch (e: FieldDataInvalidException) {
-            ImageScaler.logger.warning("Could not tag file with album art: $mp3AlbumPath/${Config.coverArtFile}")
-        } catch (e: IOException) {
-            ImageScaler.logger.warning("Could not find album art for tagging: $mp3AlbumPath/${Config.coverArtFile}")
-        }
-    }
-
-    private fun deleteAlbumArtField(tag: Tag) {
-        logger.warning("${tag.artworkList}")
-        try {
-            tag.deleteArtworkField()
-        } catch (e: KeyNotFoundException) {
-            logger.warning("Album art tag not present.")
-        }
-    }
-
-    fun updateAlbumArtField(mp3File: String, mp3AlbumPath: String) {
-        val f = AudioFileIO.read(File(mp3File))
-        val tag = f.tag
-        if (tag.firstArtwork != null) {
-            deleteAlbumArtField(tag)
-        }
-        addAlbumArtField(mp3AlbumPath, tag)
         f.commit()
     }
 }
