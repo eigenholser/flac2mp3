@@ -66,7 +66,7 @@ object Tag {
         tag.setField(FieldKey.YEAR, flacTags.year)
         tag.setField(FieldKey.GENRE, flacTags.genre)
         tag.setField(FieldKey.TRACK, flacTags.track)
-        logger.warning("Fields finally in mp3 $mp3AlbumPath: ${tag.fieldCount}")
+        logger.info("Fields finally in mp3 $mp3AlbumPath: ${tag.fieldCount}")
         // TODO: How does this work?
 //        tag.createField(FieldKey.valueOf("CDDB"), flacTags.cddb)
         f.commit()
@@ -83,20 +83,20 @@ object Tag {
         try {
             val albumArt = StandardArtwork.createArtworkFromFile(File("$mp3AlbumPath/${Config.coverArtFile}"))
             tag.addField(albumArt)
-            logger.warning("Fields finally in mp3 $mp3AlbumPath: ${tag.fieldCount}")
+            logger.info("Fields finally in mp3 $mp3AlbumPath: ${tag.fieldCount}")
         } catch (e: FieldDataInvalidException) {
-            ImageScaler.logger.warning("Could not tag file with album art: $mp3AlbumPath/${Config.coverArtFile}")
+            logger.info("Could not tag file with album art: $mp3AlbumPath/${Config.coverArtFile}")
         } catch (e: IOException) {
-            ImageScaler.logger.warning("Could not find album art for tagging: $mp3AlbumPath/${Config.coverArtFile}")
+            logger.info("Could not find album art for tagging: $mp3AlbumPath/${Config.coverArtFile}")
         }
     }
 
     private fun deleteAlbumArtField(tag: Tag) {
-        logger.warning("${tag.artworkList}")
+        logger.info("${tag.artworkList}")
         try {
             tag.deleteArtworkField()
         } catch (e: KeyNotFoundException) {
-            logger.warning("Album art tag not present.")
+            logger.info("Album art tag not present.")
         }
     }
 
