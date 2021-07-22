@@ -1,6 +1,5 @@
 package com.eigenholser.flac2mp3.rules
 
-import com.eigenholser.flac2mp3.AlbumArtFacts
 import com.eigenholser.flac2mp3.ImageScaler
 import com.eigenholser.flac2mp3.Tag
 import com.eigenholser.flac2mp3.TrackData

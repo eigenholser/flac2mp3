@@ -1,7 +1,6 @@
 package com.eigenholser.flac2mp3
 
 import com.eigenholser.flac2mp3.rules.*
-import com.eigenholser.flac2mp3.states.AlbumState
 import com.eigenholser.flac2mp3.states.AlbumState.albumStateMachine
 import com.eigenholser.flac2mp3.states.AlbumState.state
 import com.eigenholser.flac2mp3.states.AlbumStates
@@ -35,7 +34,7 @@ fun main(args: Array<String>) {
             val mtime = Files.getAttribute(file.toPath(), "lastModifiedTime") as FileTime
             convertRow(flacfile, fsize, mtime.toMillis())
         }
-        .filter (::shouldWeProcessThisTrack)
+        .filter (::isThisTrackStale)
         .forEach {
             logger.info(it.toString())
 
@@ -137,7 +136,7 @@ fun isAlbumArtUpdated(trackData: TrackData): Boolean =
     } else false
 
 @ExperimentalPathApi
-fun shouldWeProcessThisTrack(trackData: TrackData): Boolean {
+fun isThisTrackStale(trackData: TrackData): Boolean {
     return (!isTrackCurrent(trackData) || isAlbumArtUpdated(trackData))
 }
 

@@ -103,7 +103,7 @@ object Tag {
     fun updateAlbumArtField(mp3File: String, mp3AlbumPath: String) {
         val f = AudioFileIO.read(File(mp3File))
         val tag = f.tag
-        if (tag.firstArtwork != null) {
+        if (albumArtTagExists(File(mp3File))) {
             deleteAlbumArtField(tag)
         }
         addAlbumArtField(mp3AlbumPath, tag)
