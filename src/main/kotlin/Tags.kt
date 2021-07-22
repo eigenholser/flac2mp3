@@ -79,7 +79,7 @@ object Tag {
     }
 
     private fun addAlbumArtField(mp3AlbumPath: String, tag: Tag) {
-        logger.warning("Fields initially in mp3 $mp3AlbumPath: ${tag.fieldCount}")
+        logger.info("Fields initially in mp3 $mp3AlbumPath: ${tag.fieldCount}")
         try {
             val albumArt = StandardArtwork.createArtworkFromFile(File("$mp3AlbumPath/${Config.coverArtFile}"))
             tag.addField(albumArt)
