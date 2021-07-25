@@ -1,5 +1,6 @@
 package com.eigenholser.flac2mp3.rules
 
+import com.eigenholser.flac2mp3.DestType
 import com.eigenholser.flac2mp3.ImageScaler
 import com.eigenholser.flac2mp3.Tag
 import com.eigenholser.flac2mp3.TrackData
@@ -17,7 +18,8 @@ interface AlbumArtRule: Rule {
             AlbumStates.NEW_ALBUM -> {
                 ImageScaler.scaleImage(
                     trackData.flacAlbumPathAbsolute.toString(),
-                    trackData.mp3AlbumPathAbsolute.toString()
+                    trackData.mp3AlbumPathAbsolute.toString(),
+                    DestType.COVER
                 )
                 Tag.updateAlbumArtField(
                     trackData.mp3FileAbsolute.toString(),
