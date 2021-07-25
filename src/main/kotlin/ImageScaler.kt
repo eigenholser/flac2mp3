@@ -17,7 +17,6 @@ enum class DestType {
 object ImageScaler {
     val logger = Logger.getLogger("ImageScaler")
 
-    // TODO: Add to config?
     val coverFilename = Config.coverArtFile
     val thumbFilename = Config.thumbArtFile
     val destFormat = "jpg"
@@ -41,8 +40,9 @@ object ImageScaler {
             val imp = IJ.openImage("$src/${Config.albumArtFile}")
             val ip = imp.processor
 
-            imp.processor = makeThumb(ip)
-            IJ.saveAs(imp, destFormat, "$dest/$thumbFilename")
+            // Disable thumbnail for now. Maybe remove it entirely.
+//            imp.processor = makeThumb(ip)
+//            IJ.saveAs(imp, destFormat, "$dest/$thumbFilename")
 
             imp.processor = makeCover(ip)
             IJ.saveAs(imp, destFormat, "$dest/$coverFilename")

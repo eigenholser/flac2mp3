@@ -19,6 +19,10 @@ interface AlbumArtRule: Rule {
                     trackData.flacAlbumPathAbsolute.toString(),
                     trackData.mp3AlbumPathAbsolute.toString()
                 )
+                Tag.updateAlbumArtField(
+                    trackData.mp3FileAbsolute.toString(),
+                    trackData.mp3AlbumPathAbsolute.toString()
+                )
             }
             AlbumStates.EXISTING_ALBUM -> {
                 Tag.updateAlbumArtField(
