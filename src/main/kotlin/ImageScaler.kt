@@ -59,10 +59,10 @@ object ImageScaler {
 
             if (destType == DestType.THUMB) {
                 imp.processor = makeThumb(ip)
-                IJ.saveAs(imp, destFormat, dest.plus("$dest/$thumbFilename"))
+                IJ.saveAs(imp, destFormat, "$dest/$coverFilename")
             } else if (destType == DestType.COVER) {
                 imp.processor = makeCover(ip)
-                IJ.saveAs(imp, destFormat, dest.plus("$dest/$coverFilename"))
+                IJ.saveAs(imp, destFormat, "$dest/$coverFilename")
             }
         } catch (e: NullPointerException) {
             logger.warning("Album art not found: $src/${Config.albumArtFile}")
