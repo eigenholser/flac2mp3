@@ -69,18 +69,17 @@ fun main(args: Array<String>) {
                     val albumArtRulesEngine = DefaultRulesEngine(parameters)
                     val albumArtRules = Rules(ArtNewMp3(), ArtUpdateIDv3())
                     albumArtRulesEngine.fire(albumArtRules, albumArtFacts)
-
-                    if (!isTrackCurrent(it)) {
-                        LameFlac2Mp3.flac2mp3(
-                            it.flacFileAbsolute.toString(),
-                            it.mp3FileAbsolute.toString(),
-                            it.mp3AlbumPathAbsolute
-                        )
-
-                        val flacTags = Tag.readFlacTags(it.flacFileAbsolute.toString())
-                        Tag.writeMp3Tags(it.mp3FileAbsolute.toString(), it.mp3AlbumPathAbsolute.toString(), flacTags)
-                    }
                 }
+            }
+            if (!isTrackCurrent(it)) {
+                LameFlac2Mp3.flac2mp3(
+                    it.flacFileAbsolute.toString(),
+                    it.mp3FileAbsolute.toString(),
+                    it.mp3AlbumPathAbsolute
+                )
+
+                val flacTags = Tag.readFlacTags(it.flacFileAbsolute.toString())
+                Tag.writeMp3Tags(it.mp3FileAbsolute.toString(), it.mp3AlbumPathAbsolute.toString(), flacTags)
             }
         }
     // Delete the last album art
@@ -124,7 +123,7 @@ fun mp3FileExists(trackData: TrackData): Boolean {
 @ExperimentalPathApi
 fun albumArtPNGExists(trackData: TrackData): Boolean = trackData.flacAlbumPathAbsolute.toPath().resolve(Config.albumArtFile).exists()
 
-@OptIn(ExperimentalPathApi::class)
+@ExperimentalPathApi
 fun isAlbumArtUpdated(trackData: TrackData): Boolean =
     if (mp3FileExists(trackData) && albumArtPNGExists(trackData)) {
         val albumArtMtime = Files.getAttribute(
