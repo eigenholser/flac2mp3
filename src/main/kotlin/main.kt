@@ -37,15 +37,16 @@ fun main(args: Array<String>) {
         .forEach {
 
             if (currentFlacAlbum.compareTo(it.flacAlbumPathAbsolute.toString()) != 0) {
+                prevMP3AlbumPath = currentMP3AlbumPath
+                currentMP3AlbumPath = it.mp3AlbumPathAbsolute.toString()
                 if (File("$prevMP3AlbumPath").toPath().resolve(Config.coverArtFile).exists()) {
+                    logger.info("We should delete album art right here")
                     deleteMp3CoverArt(File(prevMP3AlbumPath).toPath())
                 }
                 logger.info("We've switched albums")
                 prevFlacAlbum = currentFlacAlbum
                 currentFlacAlbum = it.flacAlbumPathAbsolute.toString()
 
-                prevMP3AlbumPath = currentMP3AlbumPath
-                currentMP3AlbumPath = it.mp3AlbumPathAbsolute.toString()
                 if (!it.mp3AlbumPathAbsolute.exists()) {
                     Files.createDirectories(it.mp3AlbumPathAbsolute)
                 }
