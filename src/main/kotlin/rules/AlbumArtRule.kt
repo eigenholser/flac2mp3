@@ -13,23 +13,24 @@ interface AlbumArtRule: Rule {
     val rulePriority: Int
 
     override fun execute(facts: Facts) {
-        val trackData = facts.get<TrackData>(AlbumArtFacts.TRACK_DATA.toString())
-        when (AlbumStates.valueOf(facts.get<FiniteStateMachine>(AlbumArtFacts.ALBUM_STATE.toString()).currentState.name)) {
+        val trackData = facts.get<TrackData>(AlbumArtFacts.TRACK_DATA.name)
+        // TODO: This is a side-effect and should not be performed here.
+        when (AlbumStates.valueOf(facts.get<FiniteStateMachine>(AlbumArtFacts.ALBUM_STATE.name).currentState.name)) {
             AlbumStates.NEW_ALBUM -> {
                 ImageScaler.scaleImage(
-                    trackData.flacAlbumPathAbsolute.toString(),
-                    trackData.mp3AlbumPathAbsolute.toString(),
+                    trackData.flacAlbum,
+                    trackData.mp3Album,
                     DestType.COVER
                 )
                 Tag.updateAlbumArtField(
-                    trackData.mp3FileAbsolute.toString(),
-                    trackData.mp3AlbumPathAbsolute.toString()
+                    trackData.mp3File,
+                    trackData.mp3Album
                 )
             }
             AlbumStates.EXISTING_ALBUM -> {
                 Tag.updateAlbumArtField(
-                    trackData.mp3FileAbsolute.toString(),
-                    trackData.mp3AlbumPathAbsolute.toString()
+                    trackData.mp3File,
+                    trackData.mp3Album
                 )
             }
         }

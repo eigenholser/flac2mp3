@@ -72,8 +72,8 @@ object Tag {
         f.commit()
     }
 
-    fun albumArtTagExists(mp3File: File): Boolean {
-        val f = AudioFileIO.read(mp3File)
+    fun albumArtTagExists(mp3File: String): Boolean {
+        val f = AudioFileIO.read(File(mp3File))
         val artwork = f.tag?.firstArtwork
         return artwork != null
     }
@@ -100,13 +100,13 @@ object Tag {
         }
     }
 
-    fun updateAlbumArtField(mp3File: String, mp3AlbumPath: String) {
+    fun updateAlbumArtField(mp3File: String, mp3Album: String) {
         val f = AudioFileIO.read(File(mp3File))
         val tag = f.tag
-        if (albumArtTagExists(File(mp3File))) {
+        if (albumArtTagExists(mp3File)) {
             deleteAlbumArtField(tag)
         }
-        addAlbumArtField(mp3AlbumPath, tag)
+        addAlbumArtField(mp3Album, tag)
         f.commit()
     }
 }

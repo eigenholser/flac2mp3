@@ -15,6 +15,3 @@ enum class AlbumArtFacts {
 enum class AlbumFact {
     ALBUM_STATE, CURRENT_ALBUM, NEXT_ALBUM
 }
-
-object ConversionLib {
-}

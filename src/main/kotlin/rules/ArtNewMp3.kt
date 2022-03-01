@@ -8,7 +8,7 @@ class ArtNewMp3: AlbumArtRule {
     override val rulePriority = 1
 
     override fun getName(): String {
-        return AlbumArtRules.NEW_MP3_ART_EXISTS.toString()
+        return AlbumArtRules.NEW_MP3_ART_EXISTS.name
     }
 
     override fun getDescription(): String {
@@ -17,7 +17,7 @@ class ArtNewMp3: AlbumArtRule {
 
     @OptIn(ExperimentalPathApi::class)
     override fun evaluate(facts: Facts): Boolean {
-        val trackData = facts.get<TrackData>(AlbumArtFacts.TRACK_DATA.toString())
+        val trackData = facts.get<TrackData>(AlbumArtFacts.TRACK_DATA.name)
         return !mp3FileExists(trackData) && albumArtPNGExists(trackData)
     }
 }

@@ -8,7 +8,7 @@ class ArtUpdateIDv3: AlbumArtRule {
     override val rulePriority = 2
 
     override fun getName(): String {
-        return AlbumArtRules.MP3_TAGGED_ART_UPDATED.toString()
+        return AlbumArtRules.MP3_TAGGED_ART_UPDATED.name
     }
 
     override fun getDescription(): String {
@@ -17,7 +17,7 @@ class ArtUpdateIDv3: AlbumArtRule {
 
     @ExperimentalPathApi
     override fun evaluate(facts: Facts): Boolean {
-        val trackData = facts.get<TrackData>(AlbumArtFacts.TRACK_DATA.toString())
+        val trackData = facts.get<TrackData>(AlbumArtFacts.TRACK_DATA.name)
         return isAlbumArtUpdated(trackData)
     }
 }
